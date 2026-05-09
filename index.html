@@ -344,7 +344,7 @@ let audioCtx = null;
 let masterGain = null;
 let currentSoundscape = null;
 let musicPlaying = false;
-let targetVolume = 0.55;
+let targetVolume = 0.75;
 
 const SOUNDSCAPES = {
   // Aurora — shimmering high drones, slow filter sweeps, northern-lights shimmer
@@ -358,7 +358,7 @@ const SOUNDSCAPES = {
       const filt = ctx.createBiquadFilter();
       osc.type = 'sine';
       osc.frequency.value = base * ratio;
-      gain.gain.value = 0.06 / (idx + 1);
+      gain.gain.value = 0.14 / (idx + 1);
       filt.type = 'bandpass';
       filt.frequency.value = base * ratio;
       filt.Q.value = 3;
@@ -386,7 +386,7 @@ const SOUNDSCAPES = {
       shimmerT += 0.3;
       const now = ctx.currentTime;
       shimmerGain.gain.setValueAtTime(0, now);
-      shimmerGain.gain.linearRampToValueAtTime(0.03, now + 0.1);
+      shimmerGain.gain.linearRampToValueAtTime(0.12, now + 0.1);
       shimmerGain.gain.linearRampToValueAtTime(0, now + 1.2);
       shimmerOsc.frequency.setValueAtTime(880 * (1 + Math.sin(shimmerT) * 0.15), now);
     }, 2800);
@@ -405,7 +405,7 @@ const SOUNDSCAPES = {
     const g2 = ctx.createGain();
     osc1.type = 'sine'; osc1.frequency.value = 110;
     osc2.type = 'sine'; osc2.frequency.value = 110.3;
-    g1.gain.value = 0.12; g2.gain.value = 0.08;
+    g1.gain.value = 0.25; g2.gain.value = 0.18;
     osc1.connect(g1); osc2.connect(g2); g1.connect(out); g2.connect(out);
     osc1.start(); osc2.start();
     // breathing amplitude cycle ~4s
@@ -422,7 +422,7 @@ const SOUNDSCAPES = {
       const g = ctx.createGain();
       const f = ctx.createBiquadFilter();
       o.type = 'triangle'; o.frequency.value = freq;
-      g.gain.value = 0.03; f.type = 'lowpass'; f.frequency.value = 600;
+      g.gain.value = 0.08; f.type = 'lowpass'; f.frequency.value = 600;
       o.connect(f); f.connect(g); g.connect(out); o.start();
       nodes.push(o, g, f);
     });
@@ -438,7 +438,7 @@ const SOUNDSCAPES = {
     const sub = ctx.createOscillator();
     const subGain = ctx.createGain();
     sub.type = 'sine'; sub.frequency.value = 27.5; // A0
-    subGain.gain.value = 0.18;
+    subGain.gain.value = 0.32;
     sub.connect(subGain); subGain.connect(out); sub.start();
     // slow noise-like texture via many detuned saws
     for (let n = 0; n < 6; n++) {
@@ -447,7 +447,7 @@ const SOUNDSCAPES = {
       const filt = ctx.createBiquadFilter();
       o.type = 'sawtooth';
       o.frequency.value = 55 + n * 7.3;
-      g.gain.value = 0.012;
+      g.gain.value = 0.028;
       filt.type = 'lowpass'; filt.frequency.value = 180 + n * 30;
       o.connect(filt); filt.connect(g); g.connect(out); o.start();
       nodes.push(o, g, filt);
@@ -458,7 +458,7 @@ const SOUNDSCAPES = {
     const sweepOsc = ctx.createOscillator();
     const sweepGain = ctx.createGain();
     sweepOsc.type = 'sawtooth'; sweepOsc.frequency.value = 110;
-    sweepGain.gain.value = 0.05;
+    sweepGain.gain.value = 0.15;
     sweepOsc.connect(sweepFilt); sweepFilt.connect(sweepGain); sweepGain.connect(out); sweepOsc.start();
     let sweepDir = 1, sweepFreq = 300;
     const sweepInt = setInterval(() => {
@@ -496,7 +496,7 @@ const SOUNDSCAPES = {
       const g = ctx.createGain();
       o.type = 'sine'; o.frequency.value = freq;
       g.gain.setValueAtTime(0, ctx.currentTime);
-      g.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.01);
+      g.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.01);
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
       o.connect(g); g.connect(out); g.connect(reverb);
       o.start(); o.stop(ctx.currentTime + 2.0);
@@ -507,7 +507,7 @@ const SOUNDSCAPES = {
     const padOsc = ctx.createOscillator();
     const padGain = ctx.createGain();
     padOsc.type = 'triangle'; padOsc.frequency.value = 130.81;
-    padGain.gain.value = 0.06;
+    padGain.gain.value = 0.15;
     padOsc.connect(padGain); padGain.connect(out); padOsc.start();
     nodes.push(reverb, reverbGain, padOsc, padGain);
     return { nodes, intervals };
@@ -525,7 +525,7 @@ const SOUNDSCAPES = {
       const filt = ctx.createBiquadFilter();
       o1.type = 'sawtooth'; o1.frequency.value = f;
       o2.type = 'sawtooth'; o2.frequency.value = f * 1.003; // flange
-      g.gain.value = 0.04 / (idx + 1);
+      g.gain.value = 0.10 / (idx + 1);
       filt.type = 'lowpass'; filt.frequency.value = 400;
       o1.connect(filt); o2.connect(filt); filt.connect(g); g.connect(out);
       o1.start(); o2.start();
@@ -542,7 +542,7 @@ const SOUNDSCAPES = {
     const nGain = ctx.createGain();
     const nFilt = ctx.createBiquadFilter();
     noiseNode.type = 'sawtooth'; noiseNode.frequency.value = 220;
-    nGain.gain.value = 0.02; nFilt.type = 'bandpass'; nFilt.frequency.value = 500; nFilt.Q.value = 8;
+    nGain.gain.value = 0.08; nFilt.type = 'bandpass'; nFilt.frequency.value = 500; nFilt.Q.value = 8;
     noiseNode.connect(nFilt); nFilt.connect(nGain); nGain.connect(out); noiseNode.start();
     let whooshF = 500;
     const whooshInt = setInterval(() => {
@@ -565,7 +565,7 @@ const SOUNDSCAPES = {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.type = 'sine'; o.frequency.value = freq;
-      g.gain.value = bowlGains[idx];
+      g.gain.value = bowlGains[idx] * 1.5;
       o.connect(g); g.connect(out); o.start();
       // very slow vibrato
       const vib = ctx.createOscillator();
