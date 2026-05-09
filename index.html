@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>Tranquility Studio</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -836,20 +839,9 @@ const TRACK_NAMES = {
 
 function startSoundscape(name) {
   stopSoundscape();
-  if (!audioCtx) {
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      masterGain = audioCtx.createGain();
-      masterGain.gain.value = targetVolume;
-      masterGain.connect(audioCtx.destination);
-    } catch(e) {
-      console.error('Audio context error:', e);
-      setStatus('Audio not available on this device', false);
-      return;
-    }
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(e => console.error('Failed to resume audio context:', e));
+  if (!audioCtx || audioCtx.state === 'closed') {
+    console.error('Audio context not available');
+    return;
   }
   const builder = SOUNDSCAPES[name] || SOUNDSCAPES.aurora;
   currentSoundscape = builder(audioCtx, masterGain);
@@ -868,11 +860,35 @@ function stopSoundscape() {
 }
 
 const musicBtn = document.getElementById('music-btn');
-musicBtn.addEventListener('click', () => {
+musicBtn.addEventListener('click', async () => {
   musicPlaying = !musicPlaying;
   musicBtn.classList.toggle('playing', musicPlaying);
   musicBtn.textContent = musicPlaying ? '■' : '♪';
   if (musicPlaying) {
+    // Ensure audio context exists and is resumed (required for iOS)
+    if (!audioCtx) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = targetVolume;
+        masterGain.connect(audioCtx.destination);
+      } catch(e) {
+        console.error('Audio context error:', e);
+        setStatus('Audio not available on this device', false);
+        musicPlaying = false;
+        musicBtn.classList.remove('playing');
+        musicBtn.textContent = '♪';
+        return;
+      }
+    }
+    // Resume audio context if suspended (iOS requirement)
+    if (audioCtx.state === 'suspended') {
+      try {
+        await audioCtx.resume();
+      } catch(e) {
+        console.error('Failed to resume audio context:', e);
+      }
+    }
     startSoundscape(activePreset);
     setStatus('Music on — ' + (TRACK_NAMES[activePreset] || ''), true);
   } else {
