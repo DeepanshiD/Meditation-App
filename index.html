@@ -174,19 +174,8 @@ html, body {
   transition: color 0.2s, border-color 0.2s;
   white-space: nowrap;
 }
-.tab .tab-icon { font-size: 18px; display: block; margin-bottom: 3px; }
 .tab.active { color: #aa99ff; border-bottom-color: #7766ee; }
 .tab:hover { color: #aaa; }
-
-/* bpm badge */
-.tab .bpm {
-  display: block;
-  font-size: 9px;
-  color: var(--muted);
-  margin-top: 2px;
-  letter-spacing: 0.06em;
-}
-.tab.active .bpm { color: #7766ee; }
 
 /* sliders */
 #controls {
@@ -229,55 +218,7 @@ html, body {
 #status-msg { color: #55aa88; }
 #fps { font-variant-numeric: tabular-nums; }
 
-/* ── CODE PANEL (optional) ── */
-#code-fab {
-  position: absolute;
-  bottom: 20px; left: 16px;
-  width: 36px; height: 36px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--muted);
-  z-index: 20;
-  transition: color 0.2s;
-}
-#code-fab:hover { color: var(--text); }
-#code-panel {
-  position: absolute; inset: 0;
-  background: rgba(4,4,12,0.97);
-  z-index: 30;
-  display: flex; flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-}
-#code-panel.open { transform: translateY(0); }
-#code-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-#code-header span { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
-#code-run {
-  font-size: 12px; padding: 5px 14px;
-  border: 1px solid var(--accent-dim); border-radius: 6px;
-  background: var(--accent-dim); color: #bbaaff;
-  cursor: pointer;
-}
-#code-close {
-  font-size: 20px; color: var(--muted);
-  background: none; border: none; cursor: pointer; padding: 0 4px;
-}
-#code-editor {
-  flex: 1; padding: 14px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px; line-height: 1.7;
-  border: none; outline: none; resize: none;
-  background: transparent; color: #c0ccee;
-  tab-size: 2;
-}
+
 </style>
 </head>
 <body>
@@ -309,18 +250,7 @@ html, body {
     </div>
     <div id="hint">drag · pinch · scroll</div>
 
-    <!-- code FAB -->
-    <button id="code-fab" title="Edit shader">⌨</button>
 
-    <!-- code panel -->
-    <div id="code-panel">
-      <div id="code-header">
-        <span>SHADER CODE</span>
-        <button id="code-run">▶ Run (Ctrl+↵)</button>
-        <button id="code-close">✕</button>
-      </div>
-      <textarea id="code-editor" spellcheck="false"></textarea>
-    </div>
   </div>
 
   <!-- BOTTOM -->
@@ -1013,12 +943,11 @@ PRESETS.forEach(p => {
   const btn = document.createElement('button');
   btn.className = 'tab' + (p.id === 'aurora' ? ' active' : '');
   btn.dataset.id = p.id;
-  btn.innerHTML = `<span class="tab-icon">${p.icon}</span>${p.name}<span class="bpm">${p.bpm}</span>`;
+  btn.innerHTML = p.name;
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     activeId = p.id;
-    document.getElementById('code-editor').value = p.code.trim();
     runCode(p.code);
     if (musicOn) playSound(p.id);
   });
@@ -1046,30 +975,8 @@ document.getElementById('vol-slider').addEventListener('input', e => {
   if (masterVol && actx) masterVol.gain.setTargetAtTime(masterVolVal, actx.currentTime, 0.05);
 });
 
-// code panel
-const codePanel = document.getElementById('code-panel');
-document.getElementById('code-fab').addEventListener('click', () => codePanel.classList.add('open'));
-document.getElementById('code-close').addEventListener('click', () => codePanel.classList.remove('open'));
-document.getElementById('code-run').addEventListener('click', () => {
-  runCode(document.getElementById('code-editor').value);
-  codePanel.classList.remove('open');
-});
-document.getElementById('code-editor').addEventListener('keydown', e => {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const s = e.target.selectionStart, en = e.target.selectionEnd;
-    e.target.value = e.target.value.substring(0,s) + '  ' + e.target.value.substring(en);
-    e.target.selectionStart = e.target.selectionEnd = s + 2;
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-    runCode(e.target.value);
-    codePanel.classList.remove('open');
-  }
-});
-
 // boot
 const firstPreset = PRESETS[0];
-document.getElementById('code-editor').value = firstPreset.code.trim();
 runCode(firstPreset.code);
 animate();
 </script>
