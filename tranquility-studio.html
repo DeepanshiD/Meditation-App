@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tranquility Studio</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #080810; color: #e0e0e0;
+  font-family: 'Courier New', monospace;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+}
+
+#toolbar {
+  display: flex; align-items: center; gap: 7px; padding: 9px 16px;
+  background: #0e0e1a; border-bottom: 1px solid #1e1e30; flex-shrink: 0;
+}
+#toolbar-title {
+  font-size: 12px; color: #7a6aaa; letter-spacing: 0.18em;
+  font-weight: bold; margin-right: 6px; white-space: nowrap;
+}
+.preset-btn {
+  font-family: inherit; font-size: 11px; padding: 4px 11px;
+  border: 1px solid #2a2a3e; border-radius: 5px; background: #14141f;
+  color: #888; cursor: pointer; transition: all 0.18s; white-space: nowrap;
+}
+.preset-btn:hover { background: #1c1c2c; color: #ccc; border-color: #44446a; }
+.preset-btn.active { background: #1a1a40; color: #9988ff; border-color: #5544cc; }
+
+#music-btn {
+  font-family: inherit; font-size: 13px; padding: 4px 10px;
+  border: 1px solid #2a2a3e; border-radius: 5px; background: #14141f;
+  color: #666; cursor: pointer; transition: all 0.18s; line-height: 1;
+}
+#music-btn:hover { border-color: #55557a; color: #aaa; }
+#music-btn.playing { color: #88ddaa; border-color: #336644; background: #0e1e16; }
+
+#vol-wrap { display: flex; align-items: center; gap: 6px; }
+#vol-icon { font-size: 12px; color: #555; }
+#vol-slider {
+  width: 60px; -webkit-appearance: none; height: 2px; border-radius: 2px;
+  background: #2a2a3e; outline: none; cursor: pointer;
+}
+#vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
+  background: #6655cc; cursor: pointer;
+}
+#run-btn {
+  font-family: inherit; font-size: 11px; padding: 5px 14px;
+  border: 1px solid #4433bb; border-radius: 5px; background: #2233aa;
+  color: #bbc; cursor: pointer; transition: all 0.15s;
+}
+#run-btn:hover { background: #3344cc; }
+#toggle-editor-btn {
+  font-family: inherit; font-size: 11px; padding: 4px 9px;
+  border: 1px solid #2a2a3e; border-radius: 5px; background: #14141f;
+  color: #666; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+#toggle-editor-btn:hover { background: #1c1c2c; color: #aaa; }
+#toggle-editor-btn.active { background: #0e1e16; color: #5a9; border-color: #336644; }
+
+#main { display: flex; flex: 1; overflow: hidden; }
+
+#editor-panel {
+  display: flex; flex-direction: column; width: 420px; flex-shrink: 0;
+  border-right: 1px solid #1e1e30; background: #0c0c18;
+  transition: width 0.25s ease, opacity 0.2s ease; overflow: hidden;
+}
+#editor-panel.hidden { width: 0; opacity: 0; border-right: none; }
+#editor-label {
+  font-size: 10px; color: #44445a; padding: 7px 12px; letter-spacing: 0.08em;
+  border-bottom: 1px solid #181828; background: #0e0e1a; white-space: nowrap;
+}
+#code-editor {
+  flex: 1; width: 420px; padding: 12px; font-family: 'Courier New', monospace;
+  font-size: 12.5px; line-height: 1.75; border: none; outline: none; resize: none;
+  background: #0c0c18; color: #b8c8e8; tab-size: 2; caret-color: #8877ff;
+}
+#code-editor::selection { background: #2a2a5a; }
+
+#right-panel { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#canvas-wrap { position: relative; flex: 1; background: #06060f; overflow: hidden; }
+#sim-canvas { width: 100%; height: 100%; display: block; }
+
+#hud {
+  position: absolute; top: 14px; left: 14px;
+  font-family: 'Courier New', monospace; pointer-events: none;
+}
+#hud-title { font-size: 13px; color: rgba(200,180,255,0.92); font-weight: bold; margin-bottom: 3px; letter-spacing: 0.06em; }
+#hud-desc { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+#music-hud {
+  position: absolute; top: 14px; right: 14px;
+  font-family: 'Courier New', monospace; font-size: 10px;
+  color: rgba(255,255,255,0.22); pointer-events: none;
+  text-align: right; line-height: 1.9;
+}
+#music-hud-track { color: rgba(140,220,170,0.55); font-size: 11px; margin-bottom: 2px; }
+
+#hud-hint {
+  position: absolute; bottom: 12px; right: 14px;
+  font-size: 10px; color: rgba(255,255,255,0.18);
+  pointer-events: none; text-align: right; line-height: 1.9;
+}
+
+#controls-panel {
+  border-top: 1px solid #1e1e30; padding: 10px 14px;
+  background: #0e0e1a; min-height: 52px; max-height: 140px; overflow-y: auto; flex-shrink: 0;
+}
+#controls-label { font-size: 10px; color: #44445a; letter-spacing: 0.08em; margin-bottom: 8px; }
+.slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.slider-label { font-size: 11px; color: #6a6a8a; width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slider-row input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 2px; border-radius: 2px;
+  background: #222238; outline: none; cursor: pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+  background: #5544cc; cursor: pointer; transition: background 0.1s;
+}
+.slider-row input[type=range]:hover::-webkit-slider-thumb { background: #8877ff; }
+.slider-val { font-size: 11px; color: #aab; min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+#status-bar {
+  display: flex; align-items: center; gap: 16px; padding: 5px 14px;
+  font-size: 11px; color: #44445a; border-top: 1px solid #1e1e30;
+  background: #080810; flex-shrink: 0;
+}
+#status-msg { flex: 1; }
+.ok { color: #5aaa88; } .err { color: #dd6655; }
+#fps-counter { color: #333355; font-variant-numeric: tabular-nums; }
+
+/* subtle vignette */
+#canvas-wrap::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(6,6,15,0.65) 100%);
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span id="toolbar-title">✦ TRANQUILITY STUDIO</span>
+  <button class="preset-btn active" data-preset="aurora">Aurora</button>
+  <button class="preset-btn" data-preset="breath">Breath</button>
+  <button class="preset-btn" data-preset="galaxy">Galaxy</button>
+  <button class="preset-btn" data-preset="dna">DNA</button>
+  <button class="preset-btn" data-preset="tesseract">Tesseract</button>
+  <button class="preset-btn" data-preset="sphere">Sphere</button>
+  <div style="width:1px;height:18px;background:#1e1e30;margin:0 2px;flex-shrink:0"></div>
+  <button id="music-btn" title="Toggle music">♪</button>
+  <div id="vol-wrap">
+    <span id="vol-icon">▸</span>
+    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.55">
+  </div>
+  <div style="flex:1"></div>
+  <button id="run-btn" style="display:none">▶ Run &nbsp;<small style="opacity:0.6">Ctrl+↵</small></button>
+  <button id="toggle-editor-btn">⌨ Code</button>
+</div>
+
+<div id="main">
+  <div id="editor-panel" class="hidden">
+    <div id="editor-label">SHADER CODE — function body</div>
+    <textarea id="code-editor" spellcheck="false"></textarea>
+  </div>
+  <div id="right-panel">
+    <div id="canvas-wrap">
+      <canvas id="sim-canvas"></canvas>
+      <div id="hud">
+        <div id="hud-title"></div>
+        <div id="hud-desc"></div>
+      </div>
+      <div id="music-hud">
+        <div id="music-hud-track"></div>
+        <div id="music-hud-hint"></div>
+      </div>
+      <div id="hud-hint">move cursor · drag to orbit · scroll to zoom</div>
+    </div>
+    <div id="controls-panel">
+      <div id="controls-label">LIVE CONTROLS</div>
+      <div id="controls-host"></div>
+    </div>
+  </div>
+</div>
+
+<div id="status-bar">
+  <span id="status-msg" class="ok">Ready — click ♪ to begin music</span>
+  <span id="fps-counter">— fps</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =====================================================================
+   PARTICLE PRESETS
+   ===================================================================== */
+const PRESETS = {
+aurora: `const speed = addControl("speed","Wave Speed",0,3,1.2);
+const spread = addControl("spread","Spread",10,60,35);
+const layers = addControl("layers","Layers",1,8,4);
+const t = i / count;
+const layer = Math.floor(t * layers);
+const lt = (t * layers) % 1;
+const phase = layer * 1.3 + time * speed;
+const x = (lt - 0.5) * spread;
+const ribbon = Math.sin(x * 0.4 + phase) * 6 + Math.sin(x * 0.2 - phase * 0.7) * 4;
+const y = ribbon + layer * 3 - layers * 1.5;
+const z = Math.cos(x * 0.3 + phase * 0.5) * 5 + layer * 0.5;
+target.set(x, y, z);
+const hue = (layer / layers + time * 0.05 + lt * 0.2) % 1;
+const brightness = 0.45 + Math.sin(x * 0.5 + time * speed) * 0.2;
+color.setHSL(hue, 1.0, brightness);
+if (i === 0) setInfo("Aurora Borealis","Layered ribbon waves with shifting color bands.");`,
+
+breath: `const influence = addControl("influence","Mouse Pull",0,1,0.6);
+const drift = addControl("drift","Drift Speed",0,1,0.18);
+const spread = addControl("spread","Spread",10,40,22);
+const hueBase = addControl("hueBase","Color Tone",0,1,0.55);
+const t2 = i / count;
+const seed1 = Math.sin(i * 127.1 + 3.7);
+const seed2 = Math.cos(i * 311.7 + 1.3);
+const seed3 = Math.sin(i * 53.5 + 7.1);
+const baseX = seed1 * spread;
+const baseY = seed2 * spread * 0.5;
+const baseZ = seed3 * spread * 0.6;
+const slowT = time * drift;
+const floatX = baseX + Math.sin(slowT * 0.7 + seed2 * 6.2) * 2.5;
+const floatY = baseY + Math.cos(slowT * 0.5 + seed1 * 4.8) * 2.0;
+const floatZ = baseZ + Math.sin(slowT * 0.6 + seed3 * 5.5) * 2.0;
+const mx = mouse.x * 30;
+const my = mouse.y * 15;
+const dx = mx - floatX;
+const dy = my - floatY;
+const dist2 = dx * dx + dy * dy + 1.0;
+const pull = influence * 180.0 / dist2;
+const clampedPull = Math.min(pull, 1.0);
+const fx = floatX + dx * clampedPull;
+const fy = floatY + dy * clampedPull;
+const fz = floatZ - clampedPull * 4.0;
+target.set(fx, fy, fz);
+const nearMouse = Math.min(1.0, pull * 1.5);
+const hue2 = (hueBase + nearMouse * 0.25 + t2 * 0.12 + time * 0.015) % 1;
+color.setHSL(hue2, 0.85, 0.38 + nearMouse * 0.28);
+if (i === 0) setInfo("Breath","Move your cursor — particles drift toward it like smoke on still air.");`,
+
+galaxy: `const arms = addControl("arms","Spiral Arms",2,8,4);
+const radius = addControl("radius","Radius",10,50,28);
+const twist = addControl("twist","Twist",0,5,2.5);
+const scatter = addControl("scatter","Scatter",0,3,0.8);
+const t3 = i / count;
+const arm = Math.floor(t3 * arms);
+const rt = (t3 * arms) % 1;
+const r = rt * radius;
+const theta = rt * Math.PI * twist + (arm / arms) * Math.PI * 2 + time * 0.08;
+const rng1 = Math.sin(i * 127.3) * scatter;
+const rng2 = Math.cos(i * 311.7) * scatter;
+const rng3 = Math.sin(i * 53.1 + 1.7) * scatter * 0.4;
+const x = Math.cos(theta) * r + rng1;
+const z = Math.sin(theta) * r + rng2;
+const y = rng3 * (1 - rt);
+target.set(x, y, z);
+const coreGlow = Math.max(0, 1 - rt);
+const hue = (arm / arms + rt * 0.3 + time * 0.01) % 1;
+color.setHSL(hue * 0.5 + 0.55, 0.9, 0.35 + coreGlow * 0.3);
+if (i === 0) setInfo("Spiral Galaxy","Multi-arm galaxy with core glow and stellar scatter.");`,
+
+dna: `const rot = addControl("rot","Rotation",0.1,3,0.8);
+const helixR = addControl("helixR","Radius",2,12,5);
+const stretch = addControl("stretch","Stretch",5,25,14);
+const t4 = i / count;
+const strand = i % 2;
+const ti = Math.floor(i / 2) / (count / 2);
+const angle2 = ti * Math.PI * 14 + time * rot;
+const baseAngle = angle2 + strand * Math.PI;
+const x = Math.cos(baseAngle) * helixR;
+const z = Math.sin(baseAngle) * helixR;
+const y = (ti - 0.5) * stretch;
+const bpFrac = ti % (1 / 7);
+const bpBlend = Math.exp(-Math.pow(bpFrac * 140 - 5, 2) * 0.5);
+const bx = x * (1 - bpBlend * 0.85);
+const bz = z * (1 - bpBlend * 0.85);
+target.set(bx, y, bz);
+const hue2 = strand === 0 ? 0.6 + bpBlend * 0.15 : 0.02 + bpBlend * 0.15;
+color.setHSL(hue2, 0.95, 0.45 + bpBlend * 0.2);
+if (i === 0) setInfo("DNA Double Helix","Two phosphate backbones with base-pair bridges.");`,
+
+tesseract: `const breathe = addControl("breathe","Breathing",0,3,1);
+const size4d = addControl("size4d","4D Size",5,25,14);
+const rotSpd = addControl("rotSpd","Rotation",0,2,0.4);
+const t5 = i / count;
+const face = Math.floor(t5 * 8);
+const ft = (t5 * 8) % 1;
+const u = ft;
+const v = (Math.sin(face * 1.7) * 0.5 + 0.5);
+const signs = [[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1]];
+const sg = signs[face];
+const w4 = Math.sin(time * breathe * 0.5) * size4d * 0.4;
+const a = time * rotSpd;
+const ca = Math.cos(a), sa = Math.sin(a);
+const cb = Math.cos(a * 0.7), sb = Math.sin(a * 0.7);
+let p0 = (u - 0.5) * size4d * sg[0];
+let p1 = (v - 0.5) * size4d * sg[1];
+let p2 = 0.5 * size4d * sg[2];
+let p3 = w4;
+const r0 = p0 * ca - p3 * sa; const r3 = p0 * sa + p3 * ca;
+p0 = r0; p3 = r3;
+const r1 = p1 * cb - p2 * sb; const r2 = p1 * sb + p2 * cb;
+p1 = r1; p2 = r2;
+const proj = 1.0 / (2.5 - p3 / (size4d + 0.001));
+target.set(p0 * proj, p1 * proj, p2 * proj);
+const hue3 = (face / 8 + time * 0.04) % 1;
+color.setHSL(hue3, 1.0, 0.4 + Math.abs(proj - 0.4) * 0.4);
+if (i === 0) setInfo("4D Tesseract","Hypercube projected from 4D into 3D, breathing and rotating.");`,
+
+sphere: `const rotSpd = addControl("rotSpd","Rotation Speed",0,2,0.3);
+const radius = addControl("radius","Sphere Radius",5,30,16);
+const turbulence = addControl("turbulence","Turbulence",0,5,1.2);
+const colorShift = addControl("colorShift","Color Shift",0,1,0.0);
+const t6 = i / count;
+const phi6 = Math.acos(1 - 2 * t6);
+const theta6 = Math.PI * (1 + Math.sqrt(5)) * i;
+const nx = Math.sin(phi6) * Math.cos(theta6);
+const ny = Math.cos(phi6);
+const nz = Math.sin(phi6) * Math.sin(theta6);
+const noiseA = Math.sin(nx * 4.1 + time * rotSpd) * Math.cos(ny * 3.7 + time * 0.7);
+const noiseB = Math.cos(nz * 5.3 + time * rotSpd * 0.6) * Math.sin(nx * 2.9 - time * 0.4);
+const displacement = (noiseA + noiseB) * turbulence;
+const r6 = radius + displacement;
+const cosA = Math.cos(time * rotSpd);
+const sinA = Math.sin(time * rotSpd);
+const rx = nx * cosA - nz * sinA;
+const rz = nx * sinA + nz * cosA;
+target.set(rx * r6, ny * r6, rz * r6);
+const lat = (ny + 1) * 0.5;
+const hue6 = (lat * 0.6 + colorShift + time * 0.04) % 1;
+color.setHSL(hue6, 0.95, 0.4 + Math.abs(noiseA) * 0.25);
+if (i === 0) setInfo("Particle Sphere","Golden-ratio distributed sphere with turbulent surface displacement.");`
+};
+
+/* =====================================================================
+   AUDIO ENGINE — generative ambient per preset, no external files
+   ===================================================================== */
+let audioCtx = null;
+let masterGain = null;
+let currentSoundscape = null;
+let musicPlaying = false;
+let targetVolume = 0.55;
+
+const SOUNDSCAPES = {
+  // Aurora — shimmering high drones, slow filter sweeps, northern-lights shimmer
+  aurora: (ctx, out) => {
+    const nodes = [];
+    const base = 55; // A1
+    const harmonics = [1, 1.5, 2, 2.667, 3, 4, 5.333];
+    harmonics.forEach((ratio, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      osc.type = 'sine';
+      osc.frequency.value = base * ratio;
+      gain.gain.value = 0.06 / (idx + 1);
+      filt.type = 'bandpass';
+      filt.frequency.value = base * ratio;
+      filt.Q.value = 3;
+      osc.connect(filt); filt.connect(gain); gain.connect(out);
+      osc.start();
+      // slow shimmer
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.value = 0.05 + idx * 0.03;
+      lfoGain.gain.value = base * ratio * 0.004;
+      lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+      lfo.start();
+      nodes.push(osc, gain, filt, lfo, lfoGain);
+    });
+    // high crystal shimmer
+    const shimmerOsc = ctx.createOscillator();
+    const shimmerGain = ctx.createGain();
+    shimmerOsc.type = 'sine';
+    shimmerOsc.frequency.value = 880;
+    shimmerGain.gain.value = 0;
+    shimmerOsc.connect(shimmerGain); shimmerGain.connect(out);
+    shimmerOsc.start();
+    let shimmerT = 0;
+    const shimmerInterval = setInterval(() => {
+      shimmerT += 0.3;
+      const now = ctx.currentTime;
+      shimmerGain.gain.setValueAtTime(0, now);
+      shimmerGain.gain.linearRampToValueAtTime(0.03, now + 0.1);
+      shimmerGain.gain.linearRampToValueAtTime(0, now + 1.2);
+      shimmerOsc.frequency.setValueAtTime(880 * (1 + Math.sin(shimmerT) * 0.15), now);
+    }, 2800);
+    nodes.push(shimmerOsc, shimmerGain);
+    return { nodes, intervals: [shimmerInterval] };
+  },
+
+  // Breath — slow sine pad, warm low drone, gentle pulse like breathing
+  breath: (ctx, out) => {
+    const nodes = [];
+    const intervals = [];
+    // breathing drone
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const g1 = ctx.createGain();
+    const g2 = ctx.createGain();
+    osc1.type = 'sine'; osc1.frequency.value = 110;
+    osc2.type = 'sine'; osc2.frequency.value = 110.3;
+    g1.gain.value = 0.12; g2.gain.value = 0.08;
+    osc1.connect(g1); osc2.connect(g2); g1.connect(out); g2.connect(out);
+    osc1.start(); osc2.start();
+    // breathing amplitude cycle ~4s
+    const breathInterval = setInterval(() => {
+      const now = ctx.currentTime;
+      g1.gain.setValueAtTime(g1.gain.value, now);
+      g1.gain.linearRampToValueAtTime(0.18, now + 2.0);
+      g1.gain.linearRampToValueAtTime(0.06, now + 4.0);
+    }, 4000);
+    intervals.push(breathInterval);
+    // soft pad chord
+    [220, 330, 440].forEach((freq, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      const f = ctx.createBiquadFilter();
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.value = 0.03; f.type = 'lowpass'; f.frequency.value = 600;
+      o.connect(f); f.connect(g); g.connect(out); o.start();
+      nodes.push(o, g, f);
+    });
+    nodes.push(osc1, osc2, g1, g2);
+    return { nodes, intervals };
+  },
+
+  // Galaxy — vast low rumble, slow sweeping filter, cosmic scale
+  galaxy: (ctx, out) => {
+    const nodes = [];
+    const intervals = [];
+    // sub rumble
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    sub.type = 'sine'; sub.frequency.value = 27.5; // A0
+    subGain.gain.value = 0.18;
+    sub.connect(subGain); subGain.connect(out); sub.start();
+    // slow noise-like texture via many detuned saws
+    for (let n = 0; n < 6; n++) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      o.type = 'sawtooth';
+      o.frequency.value = 55 + n * 7.3;
+      g.gain.value = 0.012;
+      filt.type = 'lowpass'; filt.frequency.value = 180 + n * 30;
+      o.connect(filt); filt.connect(g); g.connect(out); o.start();
+      nodes.push(o, g, filt);
+    }
+    // slow filter sweep
+    const sweepFilt = ctx.createBiquadFilter();
+    sweepFilt.type = 'bandpass'; sweepFilt.frequency.value = 300; sweepFilt.Q.value = 2;
+    const sweepOsc = ctx.createOscillator();
+    const sweepGain = ctx.createGain();
+    sweepOsc.type = 'sawtooth'; sweepOsc.frequency.value = 110;
+    sweepGain.gain.value = 0.05;
+    sweepOsc.connect(sweepFilt); sweepFilt.connect(sweepGain); sweepGain.connect(out); sweepOsc.start();
+    let sweepDir = 1, sweepFreq = 300;
+    const sweepInt = setInterval(() => {
+      sweepFreq += sweepDir * 40;
+      if (sweepFreq > 800 || sweepFreq < 200) sweepDir *= -1;
+      sweepFilt.frequency.setTargetAtTime(sweepFreq, ctx.currentTime, 2.0);
+    }, 2000);
+    intervals.push(sweepInt);
+    nodes.push(sub, subGain, sweepFilt, sweepOsc, sweepGain);
+    return { nodes, intervals };
+  },
+
+  // DNA — melodic, precise, pentatonic arpeggios, crystalline bells
+  dna: (ctx, out) => {
+    const nodes = [];
+    const intervals = [];
+    const reverb = ctx.createConvolver();
+    // simple impulse reverb
+    const irLen = ctx.sampleRate * 2;
+    const irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = irBuf.getChannelData(ch);
+      for (let s = 0; s < irLen; s++) d[s] = (Math.random() * 2 - 1) * Math.pow(1 - s / irLen, 2.5);
+    }
+    reverb.buffer = irBuf;
+    const reverbGain = ctx.createGain(); reverbGain.gain.value = 0.35;
+    reverb.connect(reverbGain); reverbGain.connect(out);
+
+    const pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+    let noteIdx = 0;
+    const pingNote = () => {
+      const freq = pentatonic[noteIdx % pentatonic.length];
+      noteIdx++;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
+      o.connect(g); g.connect(out); g.connect(reverb);
+      o.start(); o.stop(ctx.currentTime + 2.0);
+    };
+    const arpInt = setInterval(pingNote, 600);
+    intervals.push(arpInt);
+    // pad drone
+    const padOsc = ctx.createOscillator();
+    const padGain = ctx.createGain();
+    padOsc.type = 'triangle'; padOsc.frequency.value = 130.81;
+    padGain.gain.value = 0.06;
+    padOsc.connect(padGain); padGain.connect(out); padOsc.start();
+    nodes.push(reverb, reverbGain, padOsc, padGain);
+    return { nodes, intervals };
+  },
+
+  // Tesseract — eerie, dimensional, flanging drones, slow detuned chords
+  tesseract: (ctx, out) => {
+    const nodes = [];
+    const intervals = [];
+    const freqs = [65.41, 98.00, 130.81, 174.61];
+    freqs.forEach((f, idx) => {
+      const o1 = ctx.createOscillator();
+      const o2 = ctx.createOscillator();
+      const g = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      o1.type = 'sawtooth'; o1.frequency.value = f;
+      o2.type = 'sawtooth'; o2.frequency.value = f * 1.003; // flange
+      g.gain.value = 0.04 / (idx + 1);
+      filt.type = 'lowpass'; filt.frequency.value = 400;
+      o1.connect(filt); o2.connect(filt); filt.connect(g); g.connect(out);
+      o1.start(); o2.start();
+      // slow pitch drift
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.value = 0.02 + idx * 0.007;
+      lfoGain.gain.value = f * 0.003;
+      lfo.connect(lfoGain); lfoGain.connect(o1.frequency); lfo.start();
+      nodes.push(o1, o2, g, filt, lfo, lfoGain);
+    });
+    // dimensional whoosh
+    const noiseNode = ctx.createOscillator();
+    const nGain = ctx.createGain();
+    const nFilt = ctx.createBiquadFilter();
+    noiseNode.type = 'sawtooth'; noiseNode.frequency.value = 220;
+    nGain.gain.value = 0.02; nFilt.type = 'bandpass'; nFilt.frequency.value = 500; nFilt.Q.value = 8;
+    noiseNode.connect(nFilt); nFilt.connect(nGain); nGain.connect(out); noiseNode.start();
+    let whooshF = 500;
+    const whooshInt = setInterval(() => {
+      whooshF = 200 + Math.random() * 600;
+      nFilt.frequency.setTargetAtTime(whooshF, ctx.currentTime, 1.5);
+    }, 3000);
+    intervals.push(whooshInt);
+    nodes.push(noiseNode, nGain, nFilt);
+    return { nodes, intervals };
+  },
+
+  // Sphere — warm singing bowls, overtone drones, meditative hum
+  sphere: (ctx, out) => {
+    const nodes = [];
+    const intervals = [];
+    // singing bowl fundamental + overtones
+    const bowlFreqs = [196, 294, 392, 490, 588, 784];
+    const bowlGains = [0.10, 0.06, 0.04, 0.025, 0.015, 0.01];
+    bowlFreqs.forEach((freq, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.value = bowlGains[idx];
+      o.connect(g); g.connect(out); o.start();
+      // very slow vibrato
+      const vib = ctx.createOscillator();
+      const vibG = ctx.createGain();
+      vib.frequency.value = 0.08 + idx * 0.02;
+      vibG.gain.value = freq * 0.002;
+      vib.connect(vibG); vibG.connect(o.frequency); vib.start();
+      nodes.push(o, g, vib, vibG);
+    });
+    // periodic strike
+    const strikeNote = () => {
+      const strikeOsc = ctx.createOscillator();
+      const strikeEnv = ctx.createGain();
+      strikeOsc.type = 'sine';
+      strikeOsc.frequency.value = 392 * (0.9 + Math.random() * 0.2);
+      strikeEnv.gain.setValueAtTime(0.14, ctx.currentTime);
+      strikeEnv.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 4.0);
+      strikeOsc.connect(strikeEnv); strikeEnv.connect(out);
+      strikeOsc.start(); strikeOsc.stop(ctx.currentTime + 4.5);
+    };
+    strikeNote();
+    const strikeInt = setInterval(strikeNote, 7000 + Math.random() * 3000);
+    intervals.push(strikeInt);
+    return { nodes, intervals };
+  }
+};
+
+const TRACK_NAMES = {
+  aurora:   '♫ Northern Light Drones',
+  breath:   '♫ Breathing Sine Pad',
+  galaxy:   '♫ Cosmic Rumble',
+  dna:      '♫ Pentatonic Bells',
+  tesseract:'♫ Dimensional Flange',
+  sphere:   '♫ Singing Bowls'
+};
+
+function startSoundscape(name) {
+  stopSoundscape();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = targetVolume;
+    masterGain.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const builder = SOUNDSCAPES[name] || SOUNDSCAPES.aurora;
+  currentSoundscape = builder(audioCtx, masterGain);
+  document.getElementById('music-hud-track').textContent = TRACK_NAMES[name] || '';
+  document.getElementById('music-hud-hint').textContent = 'generative · infinite';
+}
+
+function stopSoundscape() {
+  if (!currentSoundscape) return;
+  const { nodes, intervals } = currentSoundscape;
+  if (intervals) intervals.forEach(id => clearInterval(id));
+  if (nodes) nodes.forEach(n => { try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch(e){} });
+  currentSoundscape = null;
+  document.getElementById('music-hud-track').textContent = '';
+  document.getElementById('music-hud-hint').textContent = '';
+}
+
+const musicBtn = document.getElementById('music-btn');
+musicBtn.addEventListener('click', () => {
+  musicPlaying = !musicPlaying;
+  musicBtn.classList.toggle('playing', musicPlaying);
+  musicBtn.textContent = musicPlaying ? '■' : '♪';
+  if (musicPlaying) {
+    startSoundscape(activePreset);
+    setStatus('Music on — ' + (TRACK_NAMES[activePreset] || ''), true);
+  } else {
+    stopSoundscape();
+    setStatus('Music off', true);
+  }
+});
+
+const volSlider = document.getElementById('vol-slider');
+volSlider.addEventListener('input', () => {
+  targetVolume = parseFloat(volSlider.value);
+  if (masterGain) masterGain.gain.setTargetAtTime(targetVolume, audioCtx.currentTime, 0.1);
+});
+
+/* =====================================================================
+   THREE.JS RENDERER
+   ===================================================================== */
+const COUNT = 20000;
+let userFn = null;
+let controls = {};
+let hudTitle = '', hudDesc = '';
+let frameCount = 0, lastFpsTime = performance.now();
+let activePreset = 'aurora';
+
+const mouse = { x: 0, y: 0 };
+
+const canvas = document.getElementById('sim-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x06060f, 1);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+camera.position.set(0, 0, 55);
+
+const positions = new Float32Array(COUNT * 3);
+const colorsArr = new Float32Array(COUNT * 3);
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geo.setAttribute('color', new THREE.BufferAttribute(colorsArr, 3));
+const mat = new THREE.PointsMaterial({ size: 0.17, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.88, depthWrite: false });
+scene.add(new THREE.Points(geo, mat));
+
+const tmpTarget = new THREE.Vector3();
+const tmpColor = new THREE.Color();
+
+function addControlFn(id, label, mn, mx, val) {
+  if (!controls[id]) controls[id] = { label, min: mn, max: mx, val: parseFloat(val) };
+  return controls[id].val;
+}
+function setInfoFn(title, desc) { hudTitle = title; hudDesc = desc; }
+function annotateFn() {}
+
+// Mouse tracking
+let isDragging = false, prevMouse = {x:0,y:0};
+canvas.addEventListener('mousemove', e => {
+  if (isDragging) return;
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+});
+canvas.addEventListener('mouseleave', () => { mouse.x = 0; mouse.y = 0; });
+
+function rebuildControls() {
+  const host = document.getElementById('controls-host');
+  host.innerHTML = '';
+  for (const id in controls) {
+    const c = controls[id];
+    const row = document.createElement('div'); row.className = 'slider-row';
+    const lbl = document.createElement('span'); lbl.className = 'slider-label'; lbl.textContent = c.label;
+    const inp = document.createElement('input'); inp.type = 'range';
+    inp.min = c.min; inp.max = c.max; inp.step = (c.max - c.min) / 300; inp.value = c.val;
+    const valSpan = document.createElement('span'); valSpan.className = 'slider-val';
+    valSpan.textContent = (+c.val).toFixed(2);
+    inp.oninput = () => { c.val = parseFloat(inp.value); valSpan.textContent = (+c.val).toFixed(2); };
+    row.appendChild(lbl); row.appendChild(inp); row.appendChild(valSpan);
+    host.appendChild(row);
+  }
+}
+
+function runCode() {
+  const code = document.getElementById('code-editor').value;
+  try {
+    const fn = new Function('i','count','target','color','time','addControl','setInfo','annotate','mouse', code);
+    const oldControls = controls;
+    controls = {};
+    fn(0, COUNT, tmpTarget, tmpColor, 0,
+      (id, label, mn, mx, val) => {
+        controls[id] = oldControls[id] || { label, min: mn, max: mx, val: parseFloat(val) };
+        return controls[id].val;
+      }, setInfoFn, annotateFn, mouse
+    );
+    rebuildControls();
+    userFn = fn;
+    setStatus('Running' + (musicPlaying ? ' · ' + (TRACK_NAMES[activePreset]||'') : ''), true);
+  } catch(e) {
+    setStatus('Error: ' + e.message, false);
+    userFn = null;
+  }
+}
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = ok ? 'ok' : 'err';
+}
+
+/* =====================================================================
+   ORBIT CONTROLS
+   ===================================================================== */
+let spherical = { theta: 0.3, phi: 1.1, r: 55 };
+canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = {x:e.clientX,y:e.clientY}; canvas.style.cursor='grabbing'; });
+window.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor='grab'; });
+canvas.style.cursor = 'grab';
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  spherical.theta -= (e.clientX - prevMouse.x) * 0.007;
+  spherical.phi = Math.max(0.05, Math.min(Math.PI - 0.05, spherical.phi - (e.clientY - prevMouse.y) * 0.007));
+  prevMouse = {x:e.clientX,y:e.clientY};
+});
+canvas.addEventListener('wheel', e => {
+  spherical.r = Math.max(8, Math.min(250, spherical.r + e.deltaY * 0.06));
+}, {passive:true});
+let lastTouch = null;
+canvas.addEventListener('touchstart', e => { if (e.touches.length===1) lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY}; }, {passive:true});
+canvas.addEventListener('touchmove', e => {
+  if (!lastTouch || e.touches.length!==1) return;
+  spherical.theta -= (e.touches[0].clientX - lastTouch.x) * 0.01;
+  spherical.phi = Math.max(0.05, Math.min(Math.PI-0.05, spherical.phi - (e.touches[0].clientY - lastTouch.y) * 0.01));
+  lastTouch = {x:e.touches[0].clientX,y:e.touches[0].clientY};
+}, {passive:true});
+
+function resize() {
+  const wrap = canvas.parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / (h || 1);
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* =====================================================================
+   RENDER LOOP
+   ===================================================================== */
+const startTime = performance.now();
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const t = (now - startTime) / 1000;
+  frameCount++;
+  if (now - lastFpsTime > 700) {
+    document.getElementById('fps-counter').textContent = Math.round(frameCount / ((now - lastFpsTime) / 1000)) + ' fps';
+    frameCount = 0; lastFpsTime = now;
+  }
+  camera.position.set(
+    spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta),
+    spherical.r * Math.cos(spherical.phi),
+    spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta)
+  );
+  camera.lookAt(0, 0, 0);
+  if (userFn) {
+    try {
+      for (let i = 0; i < COUNT; i++) {
+        userFn(i, COUNT, tmpTarget, tmpColor, t, addControlFn, setInfoFn, annotateFn, mouse);
+        const b = i * 3;
+        positions[b]   = isFinite(tmpTarget.x) ? tmpTarget.x : 0;
+        positions[b+1] = isFinite(tmpTarget.y) ? tmpTarget.y : 0;
+        positions[b+2] = isFinite(tmpTarget.z) ? tmpTarget.z : 0;
+        colorsArr[b]   = isFinite(tmpColor.r) ? tmpColor.r : 0;
+        colorsArr[b+1] = isFinite(tmpColor.g) ? tmpColor.g : 0;
+        colorsArr[b+2] = isFinite(tmpColor.b) ? tmpColor.b : 0;
+      }
+      geo.attributes.position.needsUpdate = true;
+      geo.attributes.color.needsUpdate = true;
+    } catch(e) {
+      setStatus('Runtime error: ' + e.message, false);
+      userFn = null;
+    }
+  }
+  document.getElementById('hud-title').textContent = hudTitle;
+  document.getElementById('hud-desc').textContent = hudDesc;
+  renderer.render(scene, camera);
+}
+
+/* =====================================================================
+   UI WIRING
+   ===================================================================== */
+document.querySelectorAll('.preset-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    activePreset = b.dataset.preset;
+    document.getElementById('code-editor').value = PRESETS[activePreset];
+    runCode();
+    if (musicPlaying) startSoundscape(activePreset);
+  });
+});
+
+document.getElementById('run-btn').addEventListener('click', runCode);
+
+const toggleBtn = document.getElementById('toggle-editor-btn');
+const editorPanel = document.getElementById('editor-panel');
+const runBtn = document.getElementById('run-btn');
+toggleBtn.addEventListener('click', () => {
+  const isHidden = editorPanel.classList.toggle('hidden');
+  toggleBtn.classList.toggle('active', !isHidden);
+  runBtn.style.display = isHidden ? 'none' : '';
+  resize();
+});
+
+document.getElementById('code-editor').addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = e.target.selectionStart, en = e.target.selectionEnd;
+    e.target.value = e.target.value.substring(0, s) + '  ' + e.target.value.substring(en);
+    e.target.selectionStart = e.target.selectionEnd = s + 2;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
+});
+
+// Boot
+activePreset = 'aurora';
+document.getElementById('code-editor').value = PRESETS['aurora'];
+runCode();
+animate();
+</script>
+</body>
+</html>
