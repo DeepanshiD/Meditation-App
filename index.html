@@ -2,988 +2,852 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
-<title>Tranquility Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Meditation</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: #080810; color: #e0e0e0;
-  font-family: 'Courier New', monospace;
-  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+
+:root {
+  --bg: #06060e;
+  --surface: #0c0c1a;
+  --border: #1a1a2e;
+  --text: #d0d0e8;
+  --muted: #44445a;
+  --accent: #7766ee;
+  --accent-dim: #332266;
 }
 
-#toolbar {
-  display: flex; align-items: center; gap: 7px; padding: 9px 16px;
-  background: #0e0e1a; border-bottom: 1px solid #1e1e30; flex-shrink: 0;
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  touch-action: pan-y;
 }
-#toolbar-title {
-  font-size: 12px; color: #7a6aaa; letter-spacing: 0.18em;
-  font-weight: bold; margin-right: 6px; white-space: nowrap;
-}
-.preset-btn {
-  font-family: inherit; font-size: 11px; padding: 4px 11px;
-  border: 1px solid #2a2a3e; border-radius: 5px; background: #14141f;
-  color: #888; cursor: pointer; transition: all 0.18s; white-space: nowrap;
-}
-.preset-btn:hover { background: #1c1c2c; color: #ccc; border-color: #44446a; }
-.preset-btn.active { background: #1a1a40; color: #9988ff; border-color: #5544cc; }
 
-#music-btn {
-  font-family: inherit; font-size: 13px; padding: 4px 10px;
-  border: 1px solid #2a2a3e; border-radius: 5px; background: #14141f;
-  color: #666; cursor: pointer; transition: all 0.18s; line-height: 1;
+/* ── LAYOUT ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
-#music-btn:hover { border-color: #55557a; color: #aaa; }
-#music-btn.playing { color: #88ddaa; border-color: #336644; background: #0e1e16; }
 
-#vol-wrap { display: flex; align-items: center; gap: 6px; }
-#vol-icon { font-size: 12px; color: #555; }
+/* ── HEADER ── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+}
+#app-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #aa99ff;
+}
+#header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#music-toggle {
+  width: 40px; height: 24px;
+  background: var(--border);
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+#music-toggle.on { background: #334433; }
+#music-toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  background: #666;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform 0.3s, background 0.3s;
+}
+#music-toggle.on::after { transform: translateX(16px); background: #66cc88; }
+#vol-wrap {
+  display: flex; align-items: center; gap: 6px;
+}
+#vol-icon { font-size: 14px; color: var(--muted); }
 #vol-slider {
-  width: 60px; -webkit-appearance: none; height: 2px; border-radius: 2px;
-  background: #2a2a3e; outline: none; cursor: pointer;
+  width: 55px;
+  -webkit-appearance: none;
+  height: 3px; border-radius: 2px;
+  background: var(--border);
+  outline: none; cursor: pointer;
 }
 #vol-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
-  background: #6655cc; cursor: pointer;
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
 }
-#run-btn {
-  font-family: inherit; font-size: 11px; padding: 5px 14px;
-  border: 1px solid #4433bb; border-radius: 5px; background: #2233aa;
-  color: #bbc; cursor: pointer; transition: all 0.15s;
-}
-#run-btn:hover { background: #3344cc; }
-#toggle-editor-btn {
-  font-family: inherit; font-size: 11px; padding: 4px 9px;
-  border: 1px solid #2a2a3e; border-radius: 5px; background: #14141f;
-  color: #666; cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-#toggle-editor-btn:hover { background: #1c1c2c; color: #aaa; }
-#toggle-editor-btn.active { background: #0e1e16; color: #5a9; border-color: #336644; }
 
-#main { display: flex; flex: 1; overflow: hidden; }
-
-#editor-panel {
-  display: flex; flex-direction: column; width: 420px; flex-shrink: 0;
-  border-right: 1px solid #1e1e30; background: #0c0c18;
-  transition: width 0.25s ease, opacity 0.2s ease; overflow: hidden;
+/* ── CANVAS ── */
+#canvas-wrap {
+  flex: 1;
+  position: relative;
+  background: #04040c;
+  overflow: hidden;
+  touch-action: none;
 }
-#editor-panel.hidden { width: 0; opacity: 0; border-right: none; }
-#editor-label {
-  font-size: 10px; color: #44445a; padding: 7px 12px; letter-spacing: 0.08em;
-  border-bottom: 1px solid #181828; background: #0e0e1a; white-space: nowrap;
+#sim-canvas {
+  width: 100%; height: 100%;
+  display: block;
+}
+#vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(4,4,12,0.75) 100%);
+}
+#hud {
+  position: absolute; top: 14px; left: 16px;
+  pointer-events: none;
+}
+#hud-name {
+  font-size: 16px; font-weight: 600;
+  color: rgba(200,185,255,0.9);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+#hud-desc {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  max-width: 220px;
+  line-height: 1.5;
+}
+#music-label {
+  position: absolute; top: 14px; right: 16px;
+  font-size: 11px; color: rgba(100,200,140,0.5);
+  pointer-events: none; text-align: right;
+  line-height: 1.7;
+}
+#music-track { font-size: 12px; color: rgba(120,210,160,0.7); }
+#hint {
+  position: absolute; bottom: 14px; right: 16px;
+  font-size: 11px; color: rgba(255,255,255,0.15);
+  pointer-events: none; text-align: right; line-height: 1.7;
+}
+
+/* ── BOTTOM PANEL ── */
+#bottom {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* preset tabs */
+#tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 0;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+}
+#tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 1;
+  min-width: 60px;
+  padding: 12px 4px 10px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.tab .tab-icon { font-size: 18px; display: block; margin-bottom: 3px; }
+.tab.active { color: #aa99ff; border-bottom-color: #7766ee; }
+.tab:hover { color: #aaa; }
+
+/* bpm badge */
+.tab .bpm {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: 0.06em;
+}
+.tab.active .bpm { color: #7766ee; }
+
+/* sliders */
+#controls {
+  padding: 12px 16px 8px;
+  max-height: 110px;
+  overflow-y: auto;
+}
+.ctrl-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.ctrl-label {
+  font-size: 11px; color: var(--muted);
+  width: 100px; flex-shrink: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ctrl-row input[type=range] {
+  flex: 1; -webkit-appearance: none;
+  height: 3px; border-radius: 2px;
+  background: var(--border); outline: none; cursor: pointer;
+}
+.ctrl-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+}
+.ctrl-val {
+  font-size: 11px; color: var(--text);
+  min-width: 36px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* status bar */
+#status {
+  padding: 5px 16px 8px;
+  font-size: 10px;
+  color: var(--muted);
+  display: flex; justify-content: space-between;
+}
+#status-msg { color: #55aa88; }
+#fps { font-variant-numeric: tabular-nums; }
+
+/* ── CODE PANEL (optional) ── */
+#code-fab {
+  position: absolute;
+  bottom: 20px; left: 16px;
+  width: 36px; height: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--muted);
+  z-index: 20;
+  transition: color 0.2s;
+}
+#code-fab:hover { color: var(--text); }
+#code-panel {
+  position: absolute; inset: 0;
+  background: rgba(4,4,12,0.97);
+  z-index: 30;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+#code-panel.open { transform: translateY(0); }
+#code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#code-header span { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+#code-run {
+  font-size: 12px; padding: 5px 14px;
+  border: 1px solid var(--accent-dim); border-radius: 6px;
+  background: var(--accent-dim); color: #bbaaff;
+  cursor: pointer;
+}
+#code-close {
+  font-size: 20px; color: var(--muted);
+  background: none; border: none; cursor: pointer; padding: 0 4px;
 }
 #code-editor {
-  flex: 1; width: 420px; padding: 12px; font-family: 'Courier New', monospace;
-  font-size: 12.5px; line-height: 1.75; border: none; outline: none; resize: none;
-  background: #0c0c18; color: #b8c8e8; tab-size: 2; caret-color: #8877ff;
-}
-#code-editor::selection { background: #2a2a5a; }
-
-#right-panel { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
-#canvas-wrap { position: relative; flex: 1; background: #06060f; overflow: hidden; }
-#sim-canvas { width: 100%; height: 100%; display: block; }
-
-#hud {
-  position: absolute; top: 14px; left: 14px;
-  font-family: 'Courier New', monospace; pointer-events: none;
-}
-#hud-title { font-size: 13px; color: rgba(200,180,255,0.92); font-weight: bold; margin-bottom: 3px; letter-spacing: 0.06em; }
-#hud-desc { font-size: 11px; color: rgba(255,255,255,0.35); }
-
-#music-hud {
-  position: absolute; top: 14px; right: 14px;
-  font-family: 'Courier New', monospace; font-size: 10px;
-  color: rgba(255,255,255,0.22); pointer-events: none;
-  text-align: right; line-height: 1.9;
-}
-#music-hud-track { color: rgba(140,220,170,0.55); font-size: 11px; margin-bottom: 2px; }
-
-#hud-hint {
-  position: absolute; bottom: 12px; right: 14px;
-  font-size: 10px; color: rgba(255,255,255,0.18);
-  pointer-events: none; text-align: right; line-height: 1.9;
-}
-
-#controls-panel {
-  border-top: 1px solid #1e1e30; padding: 10px 14px;
-  background: #0e0e1a; min-height: 52px; flex-shrink: 0;
-}
-#controls-label { font-size: 10px; color: #44445a; letter-spacing: 0.08em; margin-bottom: 8px; }
-.slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; flex-wrap: wrap; }
-.slider-label { font-size: 11px; color: #6a6a8a; width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 0 120px; }
-.slider-row input[type=range] {
-  flex: 1; -webkit-appearance: none; height: 3px; border-radius: 2px;
-  background: #222238; outline: none; cursor: pointer; -webkit-user-select: none; user-select: none;
-}
-.slider-row input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
-  background: #5544cc; cursor: pointer; transition: background 0.1s;
-}
-.slider-row input[type=range]:hover::-webkit-slider-thumb { background: #8877ff; }
-.slider-val { font-size: 11px; color: #aab; min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
-
-#status-bar {
-  display: flex; align-items: center; gap: 16px; padding: 5px 14px;
-  font-size: 11px; color: #44445a; border-top: 1px solid #1e1e30;
-  background: #080810; flex-shrink: 0;
-}
-#status-msg { flex: 1; }
-.ok { color: #5aaa88; } .err { color: #dd6655; }
-#fps-counter { color: #333355; font-variant-numeric: tabular-nums; }
-
-/* subtle vignette */
-#canvas-wrap::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(6,6,15,0.65) 100%);
-}
-
-/* Mobile Responsive Design */
-@media (max-width: 1024px) {
-  #toolbar {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px 12px;
-  }
-  #toolbar-title {
-    font-size: 11px;
-    margin-right: 4px;
-  }
-  .preset-btn {
-    font-size: 10px;
-    padding: 3px 8px;
-    flex: 0 1 auto;
-  }
-  #music-btn {
-    font-size: 12px;
-    padding: 3px 8px;
-  }
-  #vol-wrap {
-    gap: 4px;
-  }
-  #vol-icon {
-    font-size: 10px;
-  }
-  #vol-slider {
-    width: 50px;
-  }
-  #toggle-editor-btn {
-    font-size: 10px;
-    padding: 3px 7px;
-  }
-  #editor-panel {
-    width: 320px;
-  }
-  #code-editor {
-    width: 320px;
-    font-size: 11px;
-    padding: 10px;
-  }
-}
-
-@media (max-width: 768px) {
-  body {
-    height: 100dvh;
-  }
-  #toolbar {
-    flex-wrap: wrap;
-    gap: 5px;
-    padding: 7px 10px;
-    min-height: auto;
-  }
-  #toolbar-title {
-    font-size: 10px;
-    margin-right: 3px;
-    margin-bottom: 5px;
-    width: 100%;
-  }
-  .preset-btn {
-    font-size: 9px;
-    padding: 4px 7px;
-    border-radius: 4px;
-    flex: 1 0 calc(33.333% - 5px);
-    min-width: 60px;
-  }
-  #music-btn {
-    font-size: 11px;
-    padding: 4px 6px;
-  }
-  #vol-wrap {
-    gap: 3px;
-    order: 10;
-    width: 100%;
-    margin-top: 5px;
-  }
-  #vol-icon {
-    font-size: 10px;
-  }
-  #vol-slider {
-    width: 100%;
-    flex: 1;
-  }
-  #toggle-editor-btn {
-    font-size: 9px;
-    padding: 4px 6px;
-  }
-  #main {
-    flex-wrap: wrap;
-  }
-  #editor-panel {
-    width: 100%;
-    max-height: 200px;
-    border-right: none;
-    border-bottom: 1px solid #1e1e30;
-    z-index: 10;
-  }
-  #editor-panel.hidden {
-    max-height: 0;
-    border-bottom: none;
-  }
-  #code-editor {
-    width: 100%;
-    font-size: 10px;
-    padding: 8px;
-  }
-  #right-panel {
-    width: 100%;
-    min-height: 200px;
-  }
-  #controls-panel {
-    max-height: none;
-    padding: 8px 10px;
-    font-size: 10px;
-    overflow-y: visible;
-    flex-shrink: 1;
-  }
-  #controls-label {
-    font-size: 9px;
-    margin-bottom: 6px;
-  }
-  .slider-row {
-    margin-bottom: 5px;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .slider-label {
-    font-size: 9px;
-    width: 100%;
-    flex: 0 0 100%;
-    margin-bottom: 3px;
-  }
-  .slider-val {
-    font-size: 9px;
-    min-width: 35px;
-  }
-  #status-bar {
-    font-size: 9px;
-    padding: 4px 10px;
-    gap: 8px;
-  }
-  #fps-counter {
-    font-size: 9px;
-  }
-  #hud {
-    top: 8px;
-    left: 8px;
-  }
-  #hud-title {
-    font-size: 11px;
-    margin-bottom: 2px;
-  }
-  #hud-desc {
-    font-size: 9px;
-  }
-  #music-hud {
-    top: 8px;
-    right: 8px;
-    font-size: 8px;
-  }
-  #music-hud-track {
-    font-size: 9px;
-  }
-  #hud-hint {
-    bottom: 8px;
-    right: 8px;
-    font-size: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  body {
-    height: 100vh;
-  }
-  #toolbar {
-    gap: 3px;
-    padding: 5px 6px;
-    flex-wrap: wrap;
-  }
-  #toolbar-title {
-    font-size: 8px;
-    letter-spacing: 0.08em;
-    margin-bottom: 3px;
-    width: 100%;
-  }
-  .preset-btn {
-    font-size: 7px;
-    padding: 4px 5px;
-    flex: 0 1 calc(33.333% - 2px);
-    min-width: auto;
-    border-radius: 3px;
-  }
-  #music-btn {
-    font-size: 9px;
-    padding: 4px 4px;
-    margin-top: 3px;
-  }
-  #vol-wrap {
-    flex: 1 0 100%;
-    margin-top: 3px;
-    order: 10;
-  }
-  #vol-icon {
-    font-size: 8px;
-  }
-  #vol-slider {
-    height: 4px;
-    width: 100%;
-  }
-  #toggle-editor-btn {
-    font-size: 7px;
-    padding: 4px 4px;
-    margin-top: 3px;
-  }
-  #editor-label {
-    font-size: 7px;
-    padding: 4px 6px;
-  }
-  #code-editor {
-    font-size: 10px;
-    padding: 6px;
-  }
-  #status-bar {
-    font-size: 7px;
-    padding: 3px 6px;
-    gap: 6px;
-  }
-  #fps-counter {
-    font-size: 7px;
-  }
-  #controls-panel {
-    max-height: none;
-    padding: 5px 6px;
-    overflow-y: visible;
-    flex-shrink: 1;
-  }
-  #controls-label {
-    font-size: 7px;
-    margin-bottom: 4px;
-  }
-  .slider-row {
-    margin-bottom: 4px;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-  .slider-label {
-    font-size: 7px;
-    width: 100%;
-    flex: 0 0 100%;
-    margin-bottom: 2px;
-  }
-  .slider-row input[type=range] {
-    width: 100%;
-  }
-  .slider-val {
-    font-size: 7px;
-    min-width: 25px;
-  }
-  #hud {
-    top: 6px;
-    left: 6px;
-  }
-  #hud-title {
-    font-size: 9px;
-  }
-  #hud-desc {
-    font-size: 7px;
-  }
-  #music-hud {
-    top: 6px;
-    right: 6px;
-    font-size: 7px;
-  }
-  #music-hud-track {
-    font-size: 8px;
-  }
-  #hud-hint {
-    bottom: 6px;
-    right: 6px;
-    font-size: 7px;
-  }
+  flex: 1; padding: 14px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px; line-height: 1.7;
+  border: none; outline: none; resize: none;
+  background: transparent; color: #c0ccee;
+  tab-size: 2;
 }
 </style>
 </head>
 <body>
+<div id="app">
 
-<div id="toolbar">
-  <span id="toolbar-title">✦ TRANQUILITY STUDIO</span>
-  <button class="preset-btn active" data-preset="aurora">Aurora</button>
-  <button class="preset-btn" data-preset="breath">Breath</button>
-  <button class="preset-btn" data-preset="galaxy">Galaxy</button>
-  <button class="preset-btn" data-preset="dna">DNA</button>
-  <button class="preset-btn" data-preset="tesseract">Tesseract</button>
-  <button class="preset-btn" data-preset="sphere">Sphere</button>
-  <div style="width:1px;height:18px;background:#1e1e30;margin:0 2px;flex-shrink:0"></div>
-  <button id="music-btn" title="Toggle music">♪</button>
-  <div id="vol-wrap">
-    <span id="vol-icon">▸</span>
-    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.55">
-  </div>
-  <div style="flex:1"></div>
-  <button id="run-btn" style="display:none">▶ Run &nbsp;<small style="opacity:0.6">Ctrl+↵</small></button>
-  <button id="toggle-editor-btn">⌨ Code</button>
-</div>
-
-<div id="main">
-  <div id="editor-panel" class="hidden">
-    <div id="editor-label">SHADER CODE — function body</div>
-    <textarea id="code-editor" spellcheck="false"></textarea>
-  </div>
-  <div id="right-panel">
-    <div id="canvas-wrap">
-      <canvas id="sim-canvas"></canvas>
-      <div id="hud">
-        <div id="hud-title"></div>
-        <div id="hud-desc"></div>
+  <!-- HEADER -->
+  <div id="header">
+    <span id="app-title">✦ MEDITATION</span>
+    <div id="header-right">
+      <div id="vol-wrap">
+        <span id="vol-icon">🔈</span>
+        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.6">
       </div>
-      <div id="music-hud">
-        <div id="music-hud-track"></div>
-        <div id="music-hud-hint"></div>
-      </div>
-      <div id="hud-hint">move cursor · drag to orbit · scroll to zoom</div>
-    </div>
-    <div id="controls-panel">
-      <div id="controls-label">LIVE CONTROLS</div>
-      <div id="controls-host"></div>
+      <button id="music-toggle" title="Toggle music"></button>
     </div>
   </div>
-</div>
 
-<div id="status-bar">
-  <span id="status-msg" class="ok">Ready — click ♪ to begin music</span>
-  <span id="fps-counter">— fps</span>
+  <!-- CANVAS -->
+  <div id="canvas-wrap">
+    <canvas id="sim-canvas"></canvas>
+    <div id="vignette"></div>
+    <div id="hud">
+      <div id="hud-name"></div>
+      <div id="hud-desc"></div>
+    </div>
+    <div id="music-label">
+      <div id="music-track"></div>
+      <div id="music-vibe"></div>
+    </div>
+    <div id="hint">drag · pinch · scroll</div>
+
+    <!-- code FAB -->
+    <button id="code-fab" title="Edit shader">⌨</button>
+
+    <!-- code panel -->
+    <div id="code-panel">
+      <div id="code-header">
+        <span>SHADER CODE</span>
+        <button id="code-run">▶ Run (Ctrl+↵)</button>
+        <button id="code-close">✕</button>
+      </div>
+      <textarea id="code-editor" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div id="bottom">
+    <div id="tabs"></div>
+    <div id="controls"></div>
+    <div id="status">
+      <span id="status-msg">Tap ♪ to begin</span>
+      <span id="fps">— fps</span>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-/* =====================================================================
-   PARTICLE PRESETS
-   ===================================================================== */
-const PRESETS = {
-aurora: `const speed = addControl("speed","Wave Speed",0,3,1.2);
-const spread = addControl("spread","Spread",10,60,35);
-const layers = addControl("layers","Layers",1,8,4);
+/* =============================================================
+   PRESETS — visual shaders
+   ============================================================= */
+const PRESETS = [
+  {
+    id: 'aurora',
+    name: 'Aurora',
+    icon: '🌌',
+    bpm: '120 BPM',
+    desc: 'Energising northern light ribbons',
+    vibe: 'Awakening',
+    code: `
+const speed = addControl("speed","Wave Speed",0,3,1.4);
+const spread = addControl("spread","Spread",10,60,38);
+const layers = addControl("layers","Layers",1,8,5);
 const t = i / count;
 const layer = Math.floor(t * layers);
 const lt = (t * layers) % 1;
 const phase = layer * 1.3 + time * speed;
 const x = (lt - 0.5) * spread;
-const ribbon = Math.sin(x * 0.4 + phase) * 6 + Math.sin(x * 0.2 - phase * 0.7) * 4;
+const ribbon = Math.sin(x * 0.4 + phase) * 7 + Math.sin(x * 0.2 - phase * 0.7) * 4;
 const y = ribbon + layer * 3 - layers * 1.5;
 const z = Math.cos(x * 0.3 + phase * 0.5) * 5 + layer * 0.5;
 target.set(x, y, z);
-const hue = (layer / layers + time * 0.05 + lt * 0.2) % 1;
-const brightness = 0.45 + Math.sin(x * 0.5 + time * speed) * 0.2;
-color.setHSL(hue, 1.0, brightness);
-if (i === 0) setInfo("Aurora Borealis","Layered ribbon waves with shifting color bands.");`,
-
-breath: `const influence = addControl("influence","Mouse Pull",0,1,0.6);
-const drift = addControl("drift","Drift Speed",0,1,0.18);
+const hue = (layer / layers + time * 0.06 + lt * 0.2) % 1;
+color.setHSL(hue, 1.0, 0.45 + Math.sin(x * 0.5 + time * speed) * 0.2);
+if (i === 0) setInfo("Aurora","Energising northern light ribbons.");`
+  },
+  {
+    id: 'breath',
+    name: 'Breath',
+    icon: '🌬️',
+    bpm: '90 BPM',
+    desc: 'Follow the particles. Inhale, exhale.',
+    vibe: 'Grounding',
+    code: `
+const influence = addControl("influence","Mouse Pull",0,1,0.65);
+const drift = addControl("drift","Drift Speed",0,1,0.15);
 const spread = addControl("spread","Spread",10,40,22);
 const hueBase = addControl("hueBase","Color Tone",0,1,0.55);
 const t2 = i / count;
-const seed1 = Math.sin(i * 127.1 + 3.7);
-const seed2 = Math.cos(i * 311.7 + 1.3);
-const seed3 = Math.sin(i * 53.5 + 7.1);
-const baseX = seed1 * spread;
-const baseY = seed2 * spread * 0.5;
-const baseZ = seed3 * spread * 0.6;
-const slowT = time * drift;
-const floatX = baseX + Math.sin(slowT * 0.7 + seed2 * 6.2) * 2.5;
-const floatY = baseY + Math.cos(slowT * 0.5 + seed1 * 4.8) * 2.0;
-const floatZ = baseZ + Math.sin(slowT * 0.6 + seed3 * 5.5) * 2.0;
-const mx = mouse.x * 30;
-const my = mouse.y * 15;
-const dx = mx - floatX;
-const dy = my - floatY;
-const dist2 = dx * dx + dy * dy + 1.0;
-const pull = influence * 180.0 / dist2;
-const clampedPull = Math.min(pull, 1.0);
-const fx = floatX + dx * clampedPull;
-const fy = floatY + dy * clampedPull;
-const fz = floatZ - clampedPull * 4.0;
-target.set(fx, fy, fz);
-const nearMouse = Math.min(1.0, pull * 1.5);
-const hue2 = (hueBase + nearMouse * 0.25 + t2 * 0.12 + time * 0.015) % 1;
-color.setHSL(hue2, 0.85, 0.38 + nearMouse * 0.28);
-if (i === 0) setInfo("Breath","Move your cursor — particles drift toward it like smoke on still air.");`,
-
-galaxy: `const arms = addControl("arms","Spiral Arms",2,8,4);
+const s1 = Math.sin(i * 127.1 + 3.7);
+const s2 = Math.cos(i * 311.7 + 1.3);
+const s3 = Math.sin(i * 53.5 + 7.1);
+const st = time * drift;
+const fx0 = s1 * spread + Math.sin(st * 0.7 + s2 * 6.2) * 2.5;
+const fy0 = s2 * spread * 0.5 + Math.cos(st * 0.5 + s1 * 4.8) * 2.0;
+const fz0 = s3 * spread * 0.6 + Math.sin(st * 0.6 + s3 * 5.5) * 2.0;
+const mx = mouse.x * 28; const my = mouse.y * 14;
+const dx = mx - fx0; const dy = my - fy0;
+const pull = Math.min(influence * 180 / (dx*dx + dy*dy + 1), 1.0);
+target.set(fx0 + dx * pull, fy0 + dy * pull, fz0 - pull * 4);
+const near = Math.min(pull * 1.5, 1.0);
+color.setHSL((hueBase + near * 0.25 + t2 * 0.1 + time * 0.012) % 1, 0.85, 0.38 + near * 0.28);
+if (i === 0) setInfo("Breath","Move your cursor. Inhale as particles gather, exhale as they drift away.");`
+  },
+  {
+    id: 'galaxy',
+    name: 'Galaxy',
+    icon: '🌀',
+    bpm: '60 BPM',
+    desc: 'Drift through the arms of a spiral galaxy',
+    vibe: 'Expansive',
+    code: `
+const arms = addControl("arms","Spiral Arms",2,8,4);
 const radius = addControl("radius","Radius",10,50,28);
 const twist = addControl("twist","Twist",0,5,2.5);
 const scatter = addControl("scatter","Scatter",0,3,0.8);
 const t3 = i / count;
 const arm = Math.floor(t3 * arms);
 const rt = (t3 * arms) % 1;
+const theta = rt * Math.PI * twist + (arm / arms) * Math.PI * 2 + time * 0.07;
 const r = rt * radius;
-const theta = rt * Math.PI * twist + (arm / arms) * Math.PI * 2 + time * 0.08;
-const rng1 = Math.sin(i * 127.3) * scatter;
-const rng2 = Math.cos(i * 311.7) * scatter;
-const rng3 = Math.sin(i * 53.1 + 1.7) * scatter * 0.4;
-const x = Math.cos(theta) * r + rng1;
-const z = Math.sin(theta) * r + rng2;
-const y = rng3 * (1 - rt);
-target.set(x, y, z);
-const coreGlow = Math.max(0, 1 - rt);
-const hue = (arm / arms + rt * 0.3 + time * 0.01) % 1;
-color.setHSL(hue * 0.5 + 0.55, 0.9, 0.35 + coreGlow * 0.3);
-if (i === 0) setInfo("Spiral Galaxy","Multi-arm galaxy with core glow and stellar scatter.");`,
-
-dna: `const rot = addControl("rot","Rotation",0.1,3,0.8);
+target.set(
+  Math.cos(theta) * r + Math.sin(i * 127.3) * scatter,
+  Math.sin(i * 53.1 + 1.7) * scatter * 0.4 * (1 - rt),
+  Math.sin(theta) * r + Math.cos(i * 311.7) * scatter
+);
+const cg = Math.max(0, 1 - rt);
+color.setHSL((arm / arms + rt * 0.3 + time * 0.01) % 1 * 0.5 + 0.55, 0.9, 0.35 + cg * 0.3);
+if (i === 0) setInfo("Galaxy","Float through spiral arms. Let thoughts drift like stars.");`
+  },
+  {
+    id: 'dna',
+    name: 'DNA',
+    icon: '🧬',
+    bpm: '40 BPM',
+    desc: 'The geometry of life, slowly turning',
+    vibe: 'Centering',
+    code: `
+const rot = addControl("rot","Rotation",0.05,1.5,0.35);
 const helixR = addControl("helixR","Radius",2,12,5);
 const stretch = addControl("stretch","Stretch",5,25,14);
 const t4 = i / count;
 const strand = i % 2;
 const ti = Math.floor(i / 2) / (count / 2);
 const angle2 = ti * Math.PI * 14 + time * rot;
-const baseAngle = angle2 + strand * Math.PI;
-const x = Math.cos(baseAngle) * helixR;
-const z = Math.sin(baseAngle) * helixR;
-const y = (ti - 0.5) * stretch;
-const bpFrac = ti % (1 / 7);
-const bpBlend = Math.exp(-Math.pow(bpFrac * 140 - 5, 2) * 0.5);
-const bx = x * (1 - bpBlend * 0.85);
-const bz = z * (1 - bpBlend * 0.85);
-target.set(bx, y, bz);
-const hue2 = strand === 0 ? 0.6 + bpBlend * 0.15 : 0.02 + bpBlend * 0.15;
-color.setHSL(hue2, 0.95, 0.45 + bpBlend * 0.2);
-if (i === 0) setInfo("DNA Double Helix","Two phosphate backbones with base-pair bridges.");`,
-
-tesseract: `const breathe = addControl("breathe","Breathing",0,3,1);
+const bAngle = angle2 + strand * Math.PI;
+const bpBlend = Math.exp(-Math.pow((ti % (1/7)) * 140 - 5, 2) * 0.5);
+target.set(
+  Math.cos(bAngle) * helixR * (1 - bpBlend * 0.85),
+  (ti - 0.5) * stretch,
+  Math.sin(bAngle) * helixR * (1 - bpBlend * 0.85)
+);
+color.setHSL(strand === 0 ? 0.6 + bpBlend * 0.15 : 0.02 + bpBlend * 0.15, 0.95, 0.45 + bpBlend * 0.2);
+if (i === 0) setInfo("DNA","The code of life, rotating slowly. You are made of this.");`
+  },
+  {
+    id: 'tesseract',
+    name: '4D',
+    icon: '✦',
+    bpm: '30 BPM',
+    desc: 'A dimension beyond, breathe into it',
+    vibe: 'Transcendent',
+    code: `
+const breathe = addControl("breathe","Breathing",0,2,0.7);
 const size4d = addControl("size4d","4D Size",5,25,14);
-const rotSpd = addControl("rotSpd","Rotation",0,2,0.4);
+const rotSpd = addControl("rotSpd","Rotation",0,1,0.25);
 const t5 = i / count;
 const face = Math.floor(t5 * 8);
 const ft = (t5 * 8) % 1;
-const u = ft;
-const v = (Math.sin(face * 1.7) * 0.5 + 0.5);
 const signs = [[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1]];
 const sg = signs[face];
 const w4 = Math.sin(time * breathe * 0.5) * size4d * 0.4;
 const a = time * rotSpd;
-const ca = Math.cos(a), sa = Math.sin(a);
-const cb = Math.cos(a * 0.7), sb = Math.sin(a * 0.7);
-let p0 = (u - 0.5) * size4d * sg[0];
-let p1 = (v - 0.5) * size4d * sg[1];
-let p2 = 0.5 * size4d * sg[2];
-let p3 = w4;
-const r0 = p0 * ca - p3 * sa; const r3 = p0 * sa + p3 * ca;
-p0 = r0; p3 = r3;
-const r1 = p1 * cb - p2 * sb; const r2 = p1 * sb + p2 * cb;
-p1 = r1; p2 = r2;
+const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(a*0.7), sb = Math.sin(a*0.7);
+let p0 = (ft - 0.5) * size4d * sg[0];
+let p1 = (Math.sin(face * 1.7) * 0.5 + 0.5 - 0.5) * size4d * sg[1];
+let p2 = 0.5 * size4d * sg[2], p3 = w4;
+const r0 = p0*ca - p3*sa; p3 = p0*sa + p3*ca; p0 = r0;
+const r1 = p1*cb - p2*sb; p2 = p1*sb + p2*cb; p1 = r1;
 const proj = 1.0 / (2.5 - p3 / (size4d + 0.001));
-target.set(p0 * proj, p1 * proj, p2 * proj);
-const hue3 = (face / 8 + time * 0.04) % 1;
-color.setHSL(hue3, 1.0, 0.4 + Math.abs(proj - 0.4) * 0.4);
-if (i === 0) setInfo("4D Tesseract","Hypercube projected from 4D into 3D, breathing and rotating.");`,
-
-sphere: `const rotSpd = addControl("rotSpd","Rotation Speed",0,2,0.3);
-const radius = addControl("radius","Sphere Radius",5,30,16);
-const turbulence = addControl("turbulence","Turbulence",0,5,1.2);
-const colorShift = addControl("colorShift","Color Shift",0,1,0.0);
+target.set(p0*proj, p1*proj, p2*proj);
+color.setHSL((face/8 + time*0.03) % 1, 1.0, 0.4 + Math.abs(proj-0.4)*0.4);
+if (i === 0) setInfo("4D Space","Beyond ordinary perception. Breathe into the impossible geometry.");`
+  },
+  {
+    id: 'sphere',
+    name: 'Sphere',
+    icon: '🔮',
+    bpm: '20 BPM',
+    desc: 'Pure presence. Simply be.',
+    vibe: 'Deep Rest',
+    code: `
+const radius = addControl("radius","Radius",5,30,16);
+const turb = addControl("turb","Turbulence",0,3,0.6);
+const rotS = addControl("rotS","Rotation",0,0.5,0.08);
 const t6 = i / count;
 const phi6 = Math.acos(1 - 2 * t6);
 const theta6 = Math.PI * (1 + Math.sqrt(5)) * i;
-const nx = Math.sin(phi6) * Math.cos(theta6);
+const nx = Math.sin(phi6)*Math.cos(theta6);
 const ny = Math.cos(phi6);
-const nz = Math.sin(phi6) * Math.sin(theta6);
-const noiseA = Math.sin(nx * 4.1 + time * rotSpd) * Math.cos(ny * 3.7 + time * 0.7);
-const noiseB = Math.cos(nz * 5.3 + time * rotSpd * 0.6) * Math.sin(nx * 2.9 - time * 0.4);
-const displacement = (noiseA + noiseB) * turbulence;
-const r6 = radius + displacement;
-const cosA = Math.cos(time * rotSpd);
-const sinA = Math.sin(time * rotSpd);
-const rx = nx * cosA - nz * sinA;
-const rz = nx * sinA + nz * cosA;
-target.set(rx * r6, ny * r6, rz * r6);
-const lat = (ny + 1) * 0.5;
-const hue6 = (lat * 0.6 + colorShift + time * 0.04) % 1;
-color.setHSL(hue6, 0.95, 0.4 + Math.abs(noiseA) * 0.25);
-if (i === 0) setInfo("Particle Sphere","Golden-ratio distributed sphere with turbulent surface displacement.");`
-};
+const nz = Math.sin(phi6)*Math.sin(theta6);
+const disp = (Math.sin(nx*4.1+time*rotS)*Math.cos(ny*3.7+time*0.4) + Math.cos(nz*5.3+time*rotS*0.6)*Math.sin(nx*2.9-time*0.3)) * turb;
+const r6 = radius + disp;
+const ca = Math.cos(time*rotS), sa = Math.sin(time*rotS);
+target.set((nx*ca - nz*sa)*r6, ny*r6, (nx*sa + nz*ca)*r6);
+color.setHSL(((ny+1)*0.3 + time*0.02) % 1, 0.8, 0.38 + Math.abs(disp/turb)*0.15);
+if (i === 0) setInfo("Sphere","Pure presence. Let everything settle. Simply be.");`
+  }
+];
 
-/* =====================================================================
-   AUDIO ENGINE — generative ambient per preset, no external files
-   ===================================================================== */
-let audioCtx = null;
-let masterGain = null;
-let currentSoundscape = null;
-let musicPlaying = false;
-let targetVolume = 0.75;
+/* =============================================================
+   AUDIO ENGINE — deeply meditative, BPM descends Aurora→Sphere
+   ============================================================= */
+let actx = null, masterVol = null;
+let activeSnd = null;
+let musicOn = false;
+let masterVolVal = 0.6;
 
-const SOUNDSCAPES = {
-  // Aurora — shimmering high drones, slow filter sweeps, northern-lights shimmer
-  aurora: (ctx, out) => {
-    const nodes = [];
-    const base = 55; // A1
-    const harmonics = [1, 1.5, 2, 2.667, 3, 4, 5.333];
-    harmonics.forEach((ratio, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filt = ctx.createBiquadFilter();
-      osc.type = 'sine';
-      osc.frequency.value = base * ratio;
-      gain.gain.value = 0.14 / (idx + 1);
-      filt.type = 'bandpass';
-      filt.frequency.value = base * ratio;
-      filt.Q.value = 3;
-      osc.connect(filt); filt.connect(gain); gain.connect(out);
-      osc.start();
-      // slow shimmer
+function getCtx() {
+  if (!actx) {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    masterVol = actx.createGain();
+    masterVol.gain.value = masterVolVal;
+    masterVol.connect(actx.destination);
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return { ctx: actx, out: masterVol };
+}
+
+function makeReverb(ctx, dur, decay) {
+  const conv = ctx.createConvolver();
+  const len = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let s = 0; s < len; s++) d[s] = (Math.random()*2-1) * Math.pow(1 - s/len, decay);
+  }
+  conv.buffer = buf;
+  return conv;
+}
+
+function rampGain(param, val, ctx, t) {
+  param.setTargetAtTime(val, ctx.currentTime, t || 0.05);
+}
+
+const SOUNDS = {
+
+  // ─── AURORA 120 BPM ─── bright, energising, crystalline shimmer
+  aurora: ({ ctx, out }) => {
+    const ivs = [], oscs = [];
+    const rev = makeReverb(ctx, 1.5, 3);
+    const rGain = ctx.createGain(); rGain.gain.value = 0.25;
+    rev.connect(rGain); rGain.connect(out);
+
+    // bright pad — A major voicing
+    const padFreqs = [220, 277.18, 329.63, 440, 554.37, 659.25];
+    padFreqs.forEach((f, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = idx < 2 ? 'triangle' : 'sine';
+      o.frequency.value = f;
+      g.gain.value = 0;
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start();
+      rampGain(g.gain, 0.045 / (idx * 0.4 + 1), ctx, 1.5);
+      oscs.push(o);
+      // slight vibrato
       const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-      lfo.frequency.value = 0.05 + idx * 0.03;
-      lfoGain.gain.value = base * ratio * 0.004;
-      lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
-      lfo.start();
-      nodes.push(osc, gain, filt, lfo, lfoGain);
+      const lg = ctx.createGain();
+      lfo.frequency.value = 4.5 + idx * 0.3;
+      lg.gain.value = f * 0.003;
+      lfo.connect(lg); lg.connect(o.frequency); lfo.start();
+      oscs.push(lfo);
     });
-    // high crystal shimmer
-    const shimmerOsc = ctx.createOscillator();
-    const shimmerGain = ctx.createGain();
-    shimmerOsc.type = 'sine';
-    shimmerOsc.frequency.value = 880;
-    shimmerGain.gain.value = 0;
-    shimmerOsc.connect(shimmerGain); shimmerGain.connect(out);
-    shimmerOsc.start();
-    let shimmerT = 0;
-    const shimmerInterval = setInterval(() => {
-      shimmerT += 0.3;
-      const now = ctx.currentTime;
-      shimmerGain.gain.setValueAtTime(0, now);
-      shimmerGain.gain.linearRampToValueAtTime(0.12, now + 0.1);
-      shimmerGain.gain.linearRampToValueAtTime(0, now + 1.2);
-      shimmerOsc.frequency.setValueAtTime(880 * (1 + Math.sin(shimmerT) * 0.15), now);
-    }, 2800);
-    nodes.push(shimmerOsc, shimmerGain);
-    return { nodes, intervals: [shimmerInterval] };
-  },
 
-  // Breath — slow sine pad, warm low drone, gentle pulse like breathing
-  breath: (ctx, out) => {
-    const nodes = [];
-    const intervals = [];
-    // breathing drone
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const g1 = ctx.createGain();
-    const g2 = ctx.createGain();
-    osc1.type = 'sine'; osc1.frequency.value = 110;
-    osc2.type = 'sine'; osc2.frequency.value = 110.3;
-    g1.gain.value = 0.25; g2.gain.value = 0.18;
-    osc1.connect(g1); osc2.connect(g2); g1.connect(out); g2.connect(out);
-    osc1.start(); osc2.start();
-    // breathing amplitude cycle ~4s
-    const breathInterval = setInterval(() => {
-      const now = ctx.currentTime;
-      g1.gain.setValueAtTime(g1.gain.value, now);
-      g1.gain.linearRampToValueAtTime(0.18, now + 2.0);
-      g1.gain.linearRampToValueAtTime(0.06, now + 4.0);
-    }, 4000);
-    intervals.push(breathInterval);
-    // soft pad chord
-    [220, 330, 440].forEach((freq, idx) => {
+    // crystal bell pulses — 120 BPM = 0.5s
+    const bellFreqs = [880, 1108, 1318, 1760];
+    let bIdx = 0;
+    const bellIv = setInterval(() => {
+      const f = bellFreqs[bIdx % bellFreqs.length]; bIdx++;
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      const f = ctx.createBiquadFilter();
-      o.type = 'triangle'; o.frequency.value = freq;
-      g.gain.value = 0.08; f.type = 'lowpass'; f.frequency.value = 600;
-      o.connect(f); f.connect(g); g.connect(out); o.start();
-      nodes.push(o, g, f);
-    });
-    nodes.push(osc1, osc2, g1, g2);
-    return { nodes, intervals };
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.055, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); o.stop(ctx.currentTime + 2);
+    }, 500);
+    ivs.push(bellIv);
+
+    // rising texture
+    const noiseOsc = ctx.createOscillator();
+    const nf = ctx.createBiquadFilter();
+    const ng = ctx.createGain();
+    noiseOsc.type = 'sawtooth'; noiseOsc.frequency.value = 110;
+    nf.type = 'highpass'; nf.frequency.value = 1200;
+    ng.gain.value = 0.012;
+    noiseOsc.connect(nf); nf.connect(ng); ng.connect(out); noiseOsc.start();
+    oscs.push(noiseOsc);
+
+    return { oscs, ivs, extra: [rev, rGain, nf, ng] };
   },
 
-  // Galaxy — vast low rumble, slow sweeping filter, cosmic scale
-  galaxy: (ctx, out) => {
-    const nodes = [];
-    const intervals = [];
-    // sub rumble
-    const sub = ctx.createOscillator();
-    const subGain = ctx.createGain();
-    sub.type = 'sine'; sub.frequency.value = 27.5; // A0
-    subGain.gain.value = 0.32;
-    sub.connect(subGain); subGain.connect(out); sub.start();
-    // slow noise-like texture via many detuned saws
-    for (let n = 0; n < 6; n++) {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      const filt = ctx.createBiquadFilter();
-      o.type = 'sawtooth';
-      o.frequency.value = 55 + n * 7.3;
-      g.gain.value = 0.028;
-      filt.type = 'lowpass'; filt.frequency.value = 180 + n * 30;
-      o.connect(filt); filt.connect(g); g.connect(out); o.start();
-      nodes.push(o, g, filt);
-    }
-    // slow filter sweep
-    const sweepFilt = ctx.createBiquadFilter();
-    sweepFilt.type = 'bandpass'; sweepFilt.frequency.value = 300; sweepFilt.Q.value = 2;
-    const sweepOsc = ctx.createOscillator();
-    const sweepGain = ctx.createGain();
-    sweepOsc.type = 'sawtooth'; sweepOsc.frequency.value = 110;
-    sweepGain.gain.value = 0.15;
-    sweepOsc.connect(sweepFilt); sweepFilt.connect(sweepGain); sweepGain.connect(out); sweepOsc.start();
-    let sweepDir = 1, sweepFreq = 300;
-    const sweepInt = setInterval(() => {
-      sweepFreq += sweepDir * 40;
-      if (sweepFreq > 800 || sweepFreq < 200) sweepDir *= -1;
-      sweepFilt.frequency.setTargetAtTime(sweepFreq, ctx.currentTime, 2.0);
-    }, 2000);
-    intervals.push(sweepInt);
-    nodes.push(sub, subGain, sweepFilt, sweepOsc, sweepGain);
-    return { nodes, intervals };
-  },
+  // ─── BREATH 90 BPM ─── warm pad, breathing amplitude, 4/4 gentle pulse
+  breath: ({ ctx, out }) => {
+    const ivs = [], oscs = [];
+    const rev = makeReverb(ctx, 2.5, 2.5);
+    const rGain = ctx.createGain(); rGain.gain.value = 0.4;
+    rev.connect(rGain); rGain.connect(out);
 
-  // DNA — melodic, precise, pentatonic arpeggios, crystalline bells
-  dna: (ctx, out) => {
-    const nodes = [];
-    const intervals = [];
-    const reverb = ctx.createConvolver();
-    // simple impulse reverb
-    const irLen = ctx.sampleRate * 2;
-    const irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const d = irBuf.getChannelData(ch);
-      for (let s = 0; s < irLen; s++) d[s] = (Math.random() * 2 - 1) * Math.pow(1 - s / irLen, 2.5);
-    }
-    reverb.buffer = irBuf;
-    const reverbGain = ctx.createGain(); reverbGain.gain.value = 0.35;
-    reverb.connect(reverbGain); reverbGain.connect(out);
-
-    const pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
-    let noteIdx = 0;
-    const pingNote = () => {
-      const freq = pentatonic[noteIdx % pentatonic.length];
-      noteIdx++;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sine'; o.frequency.value = freq;
-      g.gain.setValueAtTime(0, ctx.currentTime);
-      g.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
-      o.connect(g); g.connect(out); g.connect(reverb);
-      o.start(); o.stop(ctx.currentTime + 2.0);
-    };
-    const arpInt = setInterval(pingNote, 600);
-    intervals.push(arpInt);
-    // pad drone
-    const padOsc = ctx.createOscillator();
-    const padGain = ctx.createGain();
-    padOsc.type = 'triangle'; padOsc.frequency.value = 130.81;
-    padGain.gain.value = 0.15;
-    padOsc.connect(padGain); padGain.connect(out); padOsc.start();
-    nodes.push(reverb, reverbGain, padOsc, padGain);
-    return { nodes, intervals };
-  },
-
-  // Tesseract — eerie, dimensional, flanging drones, slow detuned chords
-  tesseract: (ctx, out) => {
-    const nodes = [];
-    const intervals = [];
-    const freqs = [65.41, 98.00, 130.81, 174.61];
+    // warm drone C major
+    const freqs = [130.81, 164.81, 196, 261.63, 329.63];
+    const gains = [];
     freqs.forEach((f, idx) => {
-      const o1 = ctx.createOscillator();
-      const o2 = ctx.createOscillator();
-      const g = ctx.createGain();
-      const filt = ctx.createBiquadFilter();
-      o1.type = 'sawtooth'; o1.frequency.value = f;
-      o2.type = 'sawtooth'; o2.frequency.value = f * 1.003; // flange
-      g.gain.value = 0.10 / (idx + 1);
-      filt.type = 'lowpass'; filt.frequency.value = 400;
-      o1.connect(filt); o2.connect(filt); filt.connect(g); g.connect(out);
-      o1.start(); o2.start();
-      // slow pitch drift
-      const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-      lfo.frequency.value = 0.02 + idx * 0.007;
-      lfoGain.gain.value = f * 0.003;
-      lfo.connect(lfoGain); lfoGain.connect(o1.frequency); lfo.start();
-      nodes.push(o1, o2, g, filt, lfo, lfoGain);
-    });
-    // dimensional whoosh
-    const noiseNode = ctx.createOscillator();
-    const nGain = ctx.createGain();
-    const nFilt = ctx.createBiquadFilter();
-    noiseNode.type = 'sawtooth'; noiseNode.frequency.value = 220;
-    nGain.gain.value = 0.08; nFilt.type = 'bandpass'; nFilt.frequency.value = 500; nFilt.Q.value = 8;
-    noiseNode.connect(nFilt); nFilt.connect(nGain); nGain.connect(out); noiseNode.start();
-    let whooshF = 500;
-    const whooshInt = setInterval(() => {
-      whooshF = 200 + Math.random() * 600;
-      nFilt.frequency.setTargetAtTime(whooshF, ctx.currentTime, 1.5);
-    }, 3000);
-    intervals.push(whooshInt);
-    nodes.push(noiseNode, nGain, nFilt);
-    return { nodes, intervals };
-  },
-
-  // Sphere — warm singing bowls, overtone drones, meditative hum
-  sphere: (ctx, out) => {
-    const nodes = [];
-    const intervals = [];
-    // singing bowl fundamental + overtones
-    const bowlFreqs = [196, 294, 392, 490, 588, 784];
-    const bowlGains = [0.10, 0.06, 0.04, 0.025, 0.015, 0.01];
-    bowlFreqs.forEach((freq, idx) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = 'sine'; o.frequency.value = freq;
-      g.gain.value = bowlGains[idx] * 1.5;
-      o.connect(g); g.connect(out); o.start();
-      // very slow vibrato
-      const vib = ctx.createOscillator();
-      const vibG = ctx.createGain();
-      vib.frequency.value = 0.08 + idx * 0.02;
-      vibG.gain.value = freq * 0.002;
-      vib.connect(vibG); vibG.connect(o.frequency); vib.start();
-      nodes.push(o, g, vib, vibG);
+      o.type = idx === 0 ? 'sine' : 'triangle';
+      o.frequency.value = f;
+      g.gain.value = 0;
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); oscs.push(o);
+      gains.push(g);
+      rampGain(g.gain, [0.12, 0.07, 0.06, 0.05, 0.04][idx], ctx, 2);
     });
-    // periodic strike
-    const strikeNote = () => {
-      const strikeOsc = ctx.createOscillator();
-      const strikeEnv = ctx.createGain();
-      strikeOsc.type = 'sine';
-      strikeOsc.frequency.value = 392 * (0.9 + Math.random() * 0.2);
-      strikeEnv.gain.setValueAtTime(0.14, ctx.currentTime);
-      strikeEnv.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 4.0);
-      strikeOsc.connect(strikeEnv); strikeEnv.connect(out);
-      strikeOsc.start(); strikeOsc.stop(ctx.currentTime + 4.5);
+
+    // breathing cycle 4s inhale, 4s exhale
+    let breathPhase = 0;
+    const breathIv = setInterval(() => {
+      breathPhase++;
+      const now = ctx.currentTime;
+      const isIn = breathPhase % 2 === 0;
+      gains.forEach((g, idx) => {
+        const base = [0.12, 0.07, 0.06, 0.05, 0.04][idx];
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.linearRampToValueAtTime(isIn ? base * 1.6 : base * 0.4, now + 4.0);
+      });
+    }, 4000);
+    ivs.push(breathIv);
+
+    // soft 90BPM pulse (0.667s) — gentle pluck
+    let pIdx = 0;
+    const pulseFreqs = [261.63, 329.63, 392, 261.63];
+    const pulseIv = setInterval(() => {
+      const f = pulseFreqs[pIdx % pulseFreqs.length]; pIdx++;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.04, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.5);
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); o.stop(ctx.currentTime + 3);
+    }, 667);
+    ivs.push(pulseIv);
+
+    return { oscs, ivs, extra: [rev, rGain] };
+  },
+
+  // ─── GALAXY 60 BPM ─── vast, rumbling, slow sweep, cosmic scale
+  galaxy: ({ ctx, out }) => {
+    const ivs = [], oscs = [];
+    const rev = makeReverb(ctx, 4, 2);
+    const rGain = ctx.createGain(); rGain.gain.value = 0.5;
+    rev.connect(rGain); rGain.connect(out);
+
+    // sub bass drone
+    const sub = ctx.createOscillator();
+    const subG = ctx.createGain();
+    sub.type = 'sine'; sub.frequency.value = 36.7; // D1
+    subG.gain.value = 0; sub.connect(subG); subG.connect(out); sub.start();
+    rampGain(subG.gain, 0.22, ctx, 3); oscs.push(sub);
+
+    // detuned cluster
+    [55, 82.4, 110].forEach((f, idx) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      const flt = ctx.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.value = f + idx * 0.4;
+      flt.type = 'lowpass'; flt.frequency.value = 250;
+      g.gain.value = 0;
+      o.connect(flt); flt.connect(g); g.connect(out); g.connect(rev); o.start();
+      rampGain(g.gain, 0.035, ctx, 3); oscs.push(o);
+    });
+
+    // slow rising note 60 BPM = 1s
+    const riseFreqs = [73.4, 82.4, 92.5, 110, 92.5, 82.4];
+    let rIdx = 0;
+    const riseIv = setInterval(() => {
+      const f = riseFreqs[rIdx % riseFreqs.length]; rIdx++;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.8);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + 3.0);
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); o.stop(ctx.currentTime + 3.5);
+    }, 1000);
+    ivs.push(riseIv);
+
+    return { oscs, ivs, extra: [rev, rGain] };
+  },
+
+  // ─── DNA 40 BPM ─── sparse pentatonic bells, long silence, contemplative
+  dna: ({ ctx, out }) => {
+    const ivs = [], oscs = [];
+    const rev = makeReverb(ctx, 5, 1.8);
+    const rGain = ctx.createGain(); rGain.gain.value = 0.65;
+    rev.connect(rGain); rGain.connect(out);
+
+    // very soft pad
+    [130.81, 196, 261.63].forEach((f, idx) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.value = 0; o.connect(g); g.connect(out); g.connect(rev); o.start();
+      rampGain(g.gain, [0.04, 0.025, 0.015][idx], ctx, 4); oscs.push(o);
+    });
+
+    // 40 BPM = 1.5s interval, pentatonic D minor
+    const penta = [293.66, 349.23, 392, 440, 523.25, 587.33, 698.46, 783.99];
+    let nIdx = 0;
+    const noteIv = setInterval(() => {
+      if (Math.random() < 0.3) return; // occasional silence
+      const f = penta[nIdx % penta.length]; nIdx++;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 4.5);
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); o.stop(ctx.currentTime + 5);
+    }, 1500);
+    ivs.push(noteIv);
+
+    return { oscs, ivs, extra: [rev, rGain] };
+  },
+
+  // ─── TESSERACT 30 BPM ─── slow sine drones, barely moving, transcendent
+  tesseract: ({ ctx, out }) => {
+    const ivs = [], oscs = [];
+    const rev = makeReverb(ctx, 6, 1.5);
+    const rGain = ctx.createGain(); rGain.gain.value = 0.7;
+    rev.connect(rGain); rGain.connect(out);
+
+    // two barely-detuned drones
+    [[55, 55.2], [82.4, 82.5], [110, 110.15]].forEach(([f1, f2], idx) => {
+      [f1, f2].forEach(f => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.value = 0; o.connect(g); g.connect(out); g.connect(rev); o.start();
+        rampGain(g.gain, 0.055 / (idx + 1), ctx, 5); oscs.push(o);
+      });
+    });
+
+    // 30 BPM = 2s gong-like strike
+    const gongFreqs = [110, 146.8, 164.8, 220];
+    let gIdx = 0;
+    const gongIv = setInterval(() => {
+      const f = gongFreqs[gIdx % gongFreqs.length]; gIdx++;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.1, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 7.0);
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); o.stop(ctx.currentTime + 8);
+    }, 2000);
+    ivs.push(gongIv);
+
+    return { oscs, ivs, extra: [rev, rGain] };
+  },
+
+  // ─── SPHERE 20 BPM ─── singing bowl, 16-second breath, near silence
+  sphere: ({ ctx, out }) => {
+    const ivs = [], oscs = [];
+    const rev = makeReverb(ctx, 8, 1.2);
+    const rGain = ctx.createGain(); rGain.gain.value = 0.8;
+    rev.connect(rGain); rGain.connect(out);
+
+    // singing bowl harmonics — G3
+    const bowlF = [196, 392, 588, 784, 980];
+    const bowlGains = [0.14, 0.055, 0.028, 0.014, 0.007];
+    bowlF.forEach((f, idx) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      // very slow vibrato
+      const vib = ctx.createOscillator(); const vg = ctx.createGain();
+      vib.frequency.value = 0.04 + idx * 0.01; vg.gain.value = f * 0.0015;
+      vib.connect(vg); vg.connect(o.frequency); vib.start(); oscs.push(vib);
+      g.gain.value = 0; o.connect(g); g.connect(out); g.connect(rev); o.start();
+      rampGain(g.gain, bowlGains[idx], ctx, 6); oscs.push(o);
+    });
+
+    // 20 BPM = 3s, bowl strike every 16s
+    let strikeCount = 0;
+    const strikeIv = setInterval(() => {
+      strikeCount++;
+      const f = bowlF[0] * (strikeCount % 2 === 0 ? 1 : 1.5);
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 14.0);
+      o.connect(g); g.connect(out); g.connect(rev);
+      o.start(); o.stop(ctx.currentTime + 15);
+    }, 16000);
+    ivs.push(strikeIv);
+
+    // 16s breathing master amplitude
+    const masterBreathe = () => {
+      const now = ctx.currentTime;
+      if (masterVol) {
+        masterVol.gain.cancelScheduledValues(now);
+        masterVol.gain.setValueAtTime(masterVolVal * 0.6, now);
+        masterVol.gain.linearRampToValueAtTime(masterVolVal, now + 8);
+        masterVol.gain.linearRampToValueAtTime(masterVolVal * 0.6, now + 16);
+      }
     };
-    strikeNote();
-    const strikeInt = setInterval(strikeNote, 7000 + Math.random() * 3000);
-    intervals.push(strikeInt);
-    return { nodes, intervals };
+    masterBreathe();
+    const breatheIv = setInterval(masterBreathe, 16000);
+    ivs.push(breatheIv);
+
+    return { oscs, ivs, extra: [rev, rGain] };
   }
 };
 
-const TRACK_NAMES = {
-  aurora:   '♫ Northern Light Drones',
-  breath:   '♫ Breathing Sine Pad',
-  galaxy:   '♫ Cosmic Rumble',
-  dna:      '♫ Pentatonic Bells',
-  tesseract:'♫ Dimensional Flange',
-  sphere:   '♫ Singing Bowls'
-};
-
-function startSoundscape(name) {
-  stopSoundscape();
-  if (!audioCtx || audioCtx.state === 'closed') {
-    console.error('Audio context not available');
-    return;
-  }
-  const builder = SOUNDSCAPES[name] || SOUNDSCAPES.aurora;
-  currentSoundscape = builder(audioCtx, masterGain);
-  document.getElementById('music-hud-track').textContent = TRACK_NAMES[name] || '';
-  document.getElementById('music-hud-hint').textContent = 'generative · infinite';
+function stopSound() {
+  if (!activeSnd) return;
+  const { oscs, ivs, extra } = activeSnd;
+  ivs.forEach(id => clearInterval(id));
+  [...oscs, ...(extra || [])].forEach(n => {
+    try { n.stop && n.stop(0); } catch(e){}
+    try { n.disconnect(); } catch(e){}
+  });
+  activeSnd = null;
+  document.getElementById('music-track').textContent = '';
+  document.getElementById('music-vibe').textContent = '';
 }
 
-function stopSoundscape() {
-  if (!currentSoundscape) return;
-  const { nodes, intervals } = currentSoundscape;
-  if (intervals) intervals.forEach(id => clearInterval(id));
-  if (nodes) nodes.forEach(n => { try { n.stop && n.stop(); n.disconnect && n.disconnect(); } catch(e){} });
-  currentSoundscape = null;
-  document.getElementById('music-hud-track').textContent = '';
-  document.getElementById('music-hud-hint').textContent = '';
+function playSound(id) {
+  stopSound();
+  if (!musicOn) return;
+  const builder = SOUNDS[id];
+  if (!builder) return;
+  const ctx = getCtx();
+  activeSnd = builder(ctx);
+  const preset = PRESETS.find(p => p.id === id);
+  if (preset) {
+    document.getElementById('music-track').textContent = '♫ ' + preset.name;
+    document.getElementById('music-vibe').textContent = preset.vibe + ' · ' + preset.bpm;
+  }
 }
 
-const musicBtn = document.getElementById('music-btn');
-musicBtn.addEventListener('click', async () => {
-  musicPlaying = !musicPlaying;
-  musicBtn.classList.toggle('playing', musicPlaying);
-  musicBtn.textContent = musicPlaying ? '■' : '♪';
-  if (musicPlaying) {
-    // Ensure audio context exists and is resumed (required for mobile)
-    if (!audioCtx || audioCtx.state === 'closed') {
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext || window.mozAudioContext;
-        if (!AudioContextClass) {
-          setStatus('Audio not supported on this device', false);
-          musicPlaying = false;
-          musicBtn.classList.remove('playing');
-          musicBtn.textContent = '♪';
-          return;
-        }
-        audioCtx = new AudioContextClass();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = targetVolume;
-        masterGain.connect(audioCtx.destination);
-      } catch(e) {
-        console.error('Audio context error:', e);
-        setStatus('Audio initialization failed', false);
-        musicPlaying = false;
-        musicBtn.classList.remove('playing');
-        musicBtn.textContent = '♪';
-        return;
-      }
-    }
-    // Resume audio context if suspended (iOS/Android requirement)
-    if (audioCtx.state === 'suspended') {
-      try {
-        await audioCtx.resume();
-        console.log('Audio context resumed');
-      } catch(e) {
-        console.error('Failed to resume audio context:', e);
-        setStatus('Failed to start audio', false);
-        musicPlaying = false;
-        musicBtn.classList.remove('playing');
-        musicBtn.textContent = '♪';
-        return;
-      }
-    }
-    startSoundscape(activePreset);
-    setStatus('Music on — ' + (TRACK_NAMES[activePreset] || ''), true);
-  } else {
-    stopSoundscape();
-    setStatus('Music off', true);
-  }
-});
-
-const volSlider = document.getElementById('vol-slider');
-volSlider.addEventListener('input', () => {
-  targetVolume = parseFloat(volSlider.value);
-  if (masterGain) masterGain.gain.setTargetAtTime(targetVolume, audioCtx.currentTime, 0.1);
-});
-
-/* =====================================================================
-   THREE.JS RENDERER
-   ===================================================================== */
+/* =============================================================
+   THREE.JS
+   ============================================================= */
 const COUNT = 20000;
-let userFn = null;
-let controls = {};
-let hudTitle = '', hudDesc = '';
+let userFn = null, controls = {}, hudName = '', hudDesc = '';
 let frameCount = 0, lastFpsTime = performance.now();
-let activePreset = 'aurora';
-
+let activeId = 'aurora';
 const mouse = { x: 0, y: 0 };
 
 const canvas = document.getElementById('sim-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x06060f, 1);
+renderer.setClearColor(0x04040c, 1);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
@@ -994,196 +858,219 @@ const colorsArr = new Float32Array(COUNT * 3);
 const geo = new THREE.BufferGeometry();
 geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 geo.setAttribute('color', new THREE.BufferAttribute(colorsArr, 3));
-const mat = new THREE.PointsMaterial({ size: 0.17, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.88, depthWrite: false });
+const mat = new THREE.PointsMaterial({ size: 0.18, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.9, depthWrite: false });
 scene.add(new THREE.Points(geo, mat));
 
-const tmpTarget = new THREE.Vector3();
-const tmpColor = new THREE.Color();
+const tmpT = new THREE.Vector3(), tmpC = new THREE.Color();
 
-function addControlFn(id, label, mn, mx, val) {
+function addCtrlFn(id, label, mn, mx, val) {
   if (!controls[id]) controls[id] = { label, min: mn, max: mx, val: parseFloat(val) };
   return controls[id].val;
 }
-function setInfoFn(title, desc) { hudTitle = title; hudDesc = desc; }
-function annotateFn() {}
-
-// Mouse tracking
-let isDragging = false, prevMouse = {x:0,y:0};
-canvas.addEventListener('mousemove', e => {
-  if (isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-});
-canvas.addEventListener('mouseleave', () => { mouse.x = 0; mouse.y = 0; });
+function setInfoFn(name, desc) { hudName = name; hudDesc = desc; }
 
 function rebuildControls() {
-  const host = document.getElementById('controls-host');
+  const host = document.getElementById('controls');
   host.innerHTML = '';
   for (const id in controls) {
     const c = controls[id];
-    const row = document.createElement('div'); row.className = 'slider-row';
-    const lbl = document.createElement('span'); lbl.className = 'slider-label'; lbl.textContent = c.label;
+    const row = document.createElement('div'); row.className = 'ctrl-row';
+    const lbl = document.createElement('span'); lbl.className = 'ctrl-label'; lbl.textContent = c.label;
     const inp = document.createElement('input'); inp.type = 'range';
     inp.min = c.min; inp.max = c.max; inp.step = (c.max - c.min) / 300; inp.value = c.val;
-    const valSpan = document.createElement('span'); valSpan.className = 'slider-val';
-    valSpan.textContent = (+c.val).toFixed(2);
-    inp.oninput = () => { c.val = parseFloat(inp.value); valSpan.textContent = (+c.val).toFixed(2); };
-    row.appendChild(lbl); row.appendChild(inp); row.appendChild(valSpan);
+    const vs = document.createElement('span'); vs.className = 'ctrl-val';
+    vs.textContent = (+c.val).toFixed(2);
+    inp.oninput = () => { c.val = parseFloat(inp.value); vs.textContent = (+c.val).toFixed(2); };
+    row.appendChild(lbl); row.appendChild(inp); row.appendChild(vs);
     host.appendChild(row);
   }
 }
 
-function runCode() {
-  const code = document.getElementById('code-editor').value;
+function runCode(code) {
   try {
     const fn = new Function('i','count','target','color','time','addControl','setInfo','annotate','mouse', code);
-    const oldControls = controls;
-    controls = {};
-    fn(0, COUNT, tmpTarget, tmpColor, 0,
-      (id, label, mn, mx, val) => {
-        controls[id] = oldControls[id] || { label, min: mn, max: mx, val: parseFloat(val) };
-        return controls[id].val;
-      }, setInfoFn, annotateFn, mouse
+    const old = controls; controls = {};
+    fn(0, COUNT, tmpT, tmpC, 0,
+      (id, label, mn, mx, val) => { controls[id] = old[id] || { label, min: mn, max: mx, val: parseFloat(val) }; return controls[id].val; },
+      setInfoFn, () => {}, mouse
     );
-    rebuildControls();
-    userFn = fn;
-    setStatus('Running' + (musicPlaying ? ' · ' + (TRACK_NAMES[activePreset]||'') : ''), true);
+    rebuildControls(); userFn = fn;
+    document.getElementById('status-msg').textContent = 'Running · 20 000 particles';
   } catch(e) {
-    setStatus('Error: ' + e.message, false);
+    document.getElementById('status-msg').textContent = 'Error: ' + e.message;
     userFn = null;
   }
 }
 
-function setStatus(msg, ok) {
-  const el = document.getElementById('status-msg');
-  el.textContent = msg;
-  el.className = ok ? 'ok' : 'err';
-}
+/* orbit */
+let isDragging = false, prevMouse = {x:0,y:0};
+let sph = { theta: 0.3, phi: 1.1, r: 55 };
 
-/* =====================================================================
-   ORBIT CONTROLS
-   ===================================================================== */
-let spherical = { theta: 0.3, phi: 1.1, r: 55 };
-canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = {x:e.clientX,y:e.clientY}; canvas.style.cursor='grabbing'; });
-window.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor='grab'; });
-canvas.style.cursor = 'grab';
+canvas.addEventListener('mousemove', e => {
+  if (isDragging) return;
+  const r = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  mouse.y = -(((e.clientY - r.top) / r.height) * 2 - 1);
+});
+canvas.addEventListener('mouseleave', () => { mouse.x = 0; mouse.y = 0; });
+canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = {x:e.clientX,y:e.clientY}; });
+window.addEventListener('mouseup', () => isDragging = false);
 window.addEventListener('mousemove', e => {
   if (!isDragging) return;
-  spherical.theta -= (e.clientX - prevMouse.x) * 0.007;
-  spherical.phi = Math.max(0.05, Math.min(Math.PI - 0.05, spherical.phi - (e.clientY - prevMouse.y) * 0.007));
+  sph.theta -= (e.clientX - prevMouse.x) * 0.007;
+  sph.phi = Math.max(0.05, Math.min(Math.PI - 0.05, sph.phi - (e.clientY - prevMouse.y) * 0.007));
   prevMouse = {x:e.clientX,y:e.clientY};
 });
-canvas.addEventListener('wheel', e => {
-  spherical.r = Math.max(8, Math.min(250, spherical.r + e.deltaY * 0.06));
+canvas.addEventListener('wheel', e => { sph.r = Math.max(8, Math.min(250, sph.r + e.deltaY * 0.06)); }, {passive:true});
+
+// touch orbit + mouse for breath
+let lastTouch = null, touchDist0 = 0, r0 = 55;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) { lastTouch = {x:e.touches[0].clientX,y:e.touches[0].clientY}; }
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    touchDist0 = Math.sqrt(dx*dx+dy*dy); r0 = sph.r;
+  }
 }, {passive:true});
-let lastTouch = null;
-canvas.addEventListener('touchstart', e => { if (e.touches.length===1) lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY}; }, {passive:true});
 canvas.addEventListener('touchmove', e => {
-  if (!lastTouch || e.touches.length!==1) return;
-  spherical.theta -= (e.touches[0].clientX - lastTouch.x) * 0.01;
-  spherical.phi = Math.max(0.05, Math.min(Math.PI-0.05, spherical.phi - (e.touches[0].clientY - lastTouch.y) * 0.01));
-  lastTouch = {x:e.touches[0].clientX,y:e.touches[0].clientY};
+  if (e.touches.length === 1 && lastTouch) {
+    const dx = e.touches[0].clientX - lastTouch.x;
+    const dy = e.touches[0].clientY - lastTouch.y;
+    sph.theta -= dx * 0.01;
+    sph.phi = Math.max(0.05, Math.min(Math.PI-0.05, sph.phi - dy * 0.01));
+    lastTouch = {x:e.touches[0].clientX,y:e.touches[0].clientY};
+    // also update mouse for breath effect
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((e.touches[0].clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -(((e.touches[0].clientY - rect.top) / rect.height) * 2 - 1);
+  }
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    sph.r = Math.max(8, Math.min(250, r0 * touchDist0 / (dist || 1)));
+  }
 }, {passive:true});
+canvas.addEventListener('touchend', () => { mouse.x = 0; mouse.y = 0; }, {passive:true});
 
 function resize() {
-  const wrap = canvas.parentElement;
-  const w = wrap.clientWidth, h = wrap.clientHeight;
-  if (w > 0 && h > 0) {
-    renderer.setSize(w, h, false);
-    camera.aspect = w / (h || 1);
-    camera.updateProjectionMatrix();
-  }
+  const w = canvas.parentElement.clientWidth;
+  const h = canvas.parentElement.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / (h || 1);
+  camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', () => {
-  setTimeout(resize, 100); // Small delay for orientation change to fully complete
-});
+new ResizeObserver(resize).observe(canvas.parentElement);
 resize();
 
-/* =====================================================================
-   RENDER LOOP
-   ===================================================================== */
-const startTime = performance.now();
+const t0 = performance.now();
 function animate() {
   requestAnimationFrame(animate);
   const now = performance.now();
-  const t = (now - startTime) / 1000;
+  const t = (now - t0) / 1000;
   frameCount++;
-  if (now - lastFpsTime > 700) {
-    document.getElementById('fps-counter').textContent = Math.round(frameCount / ((now - lastFpsTime) / 1000)) + ' fps';
+  if (now - lastFpsTime > 800) {
+    document.getElementById('fps').textContent = Math.round(frameCount / ((now - lastFpsTime) / 1000)) + ' fps';
     frameCount = 0; lastFpsTime = now;
   }
   camera.position.set(
-    spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta),
-    spherical.r * Math.cos(spherical.phi),
-    spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta)
+    sph.r * Math.sin(sph.phi) * Math.sin(sph.theta),
+    sph.r * Math.cos(sph.phi),
+    sph.r * Math.sin(sph.phi) * Math.cos(sph.theta)
   );
   camera.lookAt(0, 0, 0);
   if (userFn) {
     try {
       for (let i = 0; i < COUNT; i++) {
-        userFn(i, COUNT, tmpTarget, tmpColor, t, addControlFn, setInfoFn, annotateFn, mouse);
+        userFn(i, COUNT, tmpT, tmpC, t, addCtrlFn, setInfoFn, ()=>{}, mouse);
         const b = i * 3;
-        positions[b]   = isFinite(tmpTarget.x) ? tmpTarget.x : 0;
-        positions[b+1] = isFinite(tmpTarget.y) ? tmpTarget.y : 0;
-        positions[b+2] = isFinite(tmpTarget.z) ? tmpTarget.z : 0;
-        colorsArr[b]   = isFinite(tmpColor.r) ? tmpColor.r : 0;
-        colorsArr[b+1] = isFinite(tmpColor.g) ? tmpColor.g : 0;
-        colorsArr[b+2] = isFinite(tmpColor.b) ? tmpColor.b : 0;
+        positions[b]   = isFinite(tmpT.x) ? tmpT.x : 0;
+        positions[b+1] = isFinite(tmpT.y) ? tmpT.y : 0;
+        positions[b+2] = isFinite(tmpT.z) ? tmpT.z : 0;
+        colorsArr[b]   = isFinite(tmpC.r) ? tmpC.r : 0;
+        colorsArr[b+1] = isFinite(tmpC.g) ? tmpC.g : 0;
+        colorsArr[b+2] = isFinite(tmpC.b) ? tmpC.b : 0;
       }
       geo.attributes.position.needsUpdate = true;
       geo.attributes.color.needsUpdate = true;
     } catch(e) {
-      setStatus('Runtime error: ' + e.message, false);
+      document.getElementById('status-msg').textContent = 'Runtime error: ' + e.message;
       userFn = null;
     }
   }
-  document.getElementById('hud-title').textContent = hudTitle;
+  document.getElementById('hud-name').textContent = hudName;
   document.getElementById('hud-desc').textContent = hudDesc;
   renderer.render(scene, camera);
 }
 
-/* =====================================================================
-   UI WIRING
-   ===================================================================== */
-document.querySelectorAll('.preset-btn').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    activePreset = b.dataset.preset;
-    document.getElementById('code-editor').value = PRESETS[activePreset];
-    runCode();
-    if (musicPlaying) startSoundscape(activePreset);
+/* =============================================================
+   UI
+   ============================================================= */
+// build tabs
+const tabsEl = document.getElementById('tabs');
+PRESETS.forEach(p => {
+  const btn = document.createElement('button');
+  btn.className = 'tab' + (p.id === 'aurora' ? ' active' : '');
+  btn.dataset.id = p.id;
+  btn.innerHTML = `<span class="tab-icon">${p.icon}</span>${p.name}<span class="bpm">${p.bpm}</span>`;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    activeId = p.id;
+    document.getElementById('code-editor').value = p.code.trim();
+    runCode(p.code);
+    if (musicOn) playSound(p.id);
   });
+  tabsEl.appendChild(btn);
 });
 
-document.getElementById('run-btn').addEventListener('click', runCode);
-
-const toggleBtn = document.getElementById('toggle-editor-btn');
-const editorPanel = document.getElementById('editor-panel');
-const runBtn = document.getElementById('run-btn');
-toggleBtn.addEventListener('click', () => {
-  const isHidden = editorPanel.classList.toggle('hidden');
-  toggleBtn.classList.toggle('active', !isHidden);
-  runBtn.style.display = isHidden ? 'none' : '';
-  resize();
+// music toggle
+const musicToggle = document.getElementById('music-toggle');
+musicToggle.addEventListener('click', () => {
+  musicOn = !musicOn;
+  musicToggle.classList.toggle('on', musicOn);
+  if (musicOn) {
+    playSound(activeId);
+    document.getElementById('status-msg').textContent = 'Music on';
+  } else {
+    stopSound();
+    if (masterVol && actx) masterVol.gain.setTargetAtTime(masterVolVal, actx.currentTime, 0.1);
+    document.getElementById('status-msg').textContent = 'Music off';
+  }
 });
 
+// volume
+document.getElementById('vol-slider').addEventListener('input', e => {
+  masterVolVal = parseFloat(e.target.value);
+  if (masterVol && actx) masterVol.gain.setTargetAtTime(masterVolVal, actx.currentTime, 0.05);
+});
+
+// code panel
+const codePanel = document.getElementById('code-panel');
+document.getElementById('code-fab').addEventListener('click', () => codePanel.classList.add('open'));
+document.getElementById('code-close').addEventListener('click', () => codePanel.classList.remove('open'));
+document.getElementById('code-run').addEventListener('click', () => {
+  runCode(document.getElementById('code-editor').value);
+  codePanel.classList.remove('open');
+});
 document.getElementById('code-editor').addEventListener('keydown', e => {
   if (e.key === 'Tab') {
     e.preventDefault();
     const s = e.target.selectionStart, en = e.target.selectionEnd;
-    e.target.value = e.target.value.substring(0, s) + '  ' + e.target.value.substring(en);
+    e.target.value = e.target.value.substring(0,s) + '  ' + e.target.value.substring(en);
     e.target.selectionStart = e.target.selectionEnd = s + 2;
   }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    runCode(e.target.value);
+    codePanel.classList.remove('open');
+  }
 });
 
-// Boot
-activePreset = 'aurora';
-document.getElementById('code-editor').value = PRESETS['aurora'];
-runCode();
+// boot
+const firstPreset = PRESETS[0];
+document.getElementById('code-editor').value = firstPreset.code.trim();
+runCode(firstPreset.code);
 animate();
 </script>
 </body>
