@@ -82,7 +82,7 @@ body {
 }
 #code-editor::selection { background: #2a2a5a; }
 
-#right-panel { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#right-panel { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
 #canvas-wrap { position: relative; flex: 1; background: #06060f; overflow: hidden; }
 #sim-canvas { width: 100%; height: 100%; display: block; }
 
@@ -109,14 +109,14 @@ body {
 
 #controls-panel {
   border-top: 1px solid #1e1e30; padding: 10px 14px;
-  background: #0e0e1a; min-height: 52px; overflow-y: auto; flex-shrink: 0;
+  background: #0e0e1a; min-height: 52px; flex-shrink: 0;
 }
 #controls-label { font-size: 10px; color: #44445a; letter-spacing: 0.08em; margin-bottom: 8px; }
 .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; flex-wrap: wrap; }
 .slider-label { font-size: 11px; color: #6a6a8a; width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 0 120px; }
 .slider-row input[type=range] {
-  flex: 1; -webkit-appearance: none; height: 2px; border-radius: 2px;
-  background: #222238; outline: none; cursor: pointer;
+  flex: 1; -webkit-appearance: none; height: 3px; border-radius: 2px;
+  background: #222238; outline: none; cursor: pointer; -webkit-user-select: none; user-select: none;
 }
 .slider-row input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
@@ -255,6 +255,7 @@ body {
     padding: 8px 10px;
     font-size: 10px;
     overflow-y: visible;
+    flex-shrink: 1;
   }
   #controls-label {
     font-size: 9px;
@@ -310,65 +311,115 @@ body {
 }
 
 @media (max-width: 480px) {
+  body {
+    height: 100vh;
+  }
   #toolbar {
-    gap: 4px;
-    padding: 6px 8px;
+    gap: 3px;
+    padding: 5px 6px;
+    flex-wrap: wrap;
   }
   #toolbar-title {
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    margin-bottom: 4px;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
     width: 100%;
   }
   .preset-btn {
-    font-size: 8px;
-    padding: 3px 6px;
-    flex: 0 1 calc(50% - 2px);
+    font-size: 7px;
+    padding: 4px 5px;
+    flex: 0 1 calc(33.333% - 2px);
     min-width: auto;
+    border-radius: 3px;
   }
   #music-btn {
-    font-size: 10px;
-    padding: 3px 5px;
+    font-size: 9px;
+    padding: 4px 4px;
+    margin-top: 3px;
   }
   #vol-wrap {
     flex: 1 0 100%;
-    margin-top: 4px;
+    margin-top: 3px;
+    order: 10;
+  }
+  #vol-icon {
+    font-size: 8px;
   }
   #vol-slider {
-    height: 3px;
+    height: 4px;
+    width: 100%;
   }
   #toggle-editor-btn {
-    font-size: 8px;
-    padding: 3px 5px;
+    font-size: 7px;
+    padding: 4px 4px;
+    margin-top: 3px;
   }
   #editor-label {
-    font-size: 8px;
-    padding: 5px 8px;
+    font-size: 7px;
+    padding: 4px 6px;
   }
   #code-editor {
-    font-size: 11px;
+    font-size: 10px;
+    padding: 6px;
   }
   #status-bar {
-    font-size: 8px;
-    padding: 3px 8px;
+    font-size: 7px;
+    padding: 3px 6px;
+    gap: 6px;
+  }
+  #fps-counter {
+    font-size: 7px;
   }
   #controls-panel {
     max-height: none;
-    padding: 6px 8px;
+    padding: 5px 6px;
     overflow-y: visible;
+    flex-shrink: 1;
   }
   #controls-label {
-    font-size: 8px;
+    font-size: 7px;
+    margin-bottom: 4px;
+  }
+  .slider-row {
+    margin-bottom: 4px;
+    gap: 4px;
+    flex-wrap: wrap;
   }
   .slider-label {
-    font-size: 8px;
+    font-size: 7px;
     width: 100%;
     flex: 0 0 100%;
     margin-bottom: 2px;
   }
+  .slider-row input[type=range] {
+    width: 100%;
+  }
   .slider-val {
+    font-size: 7px;
+    min-width: 25px;
+  }
+  #hud {
+    top: 6px;
+    left: 6px;
+  }
+  #hud-title {
+    font-size: 9px;
+  }
+  #hud-desc {
+    font-size: 7px;
+  }
+  #music-hud {
+    top: 6px;
+    right: 6px;
+    font-size: 7px;
+  }
+  #music-hud-track {
     font-size: 8px;
-    min-width: 30px;
+  }
+  #hud-hint {
+    bottom: 6px;
+    right: 6px;
+    font-size: 7px;
   }
 }
 </style>
@@ -865,28 +916,42 @@ musicBtn.addEventListener('click', async () => {
   musicBtn.classList.toggle('playing', musicPlaying);
   musicBtn.textContent = musicPlaying ? '■' : '♪';
   if (musicPlaying) {
-    // Ensure audio context exists and is resumed (required for iOS)
-    if (!audioCtx) {
+    // Ensure audio context exists and is resumed (required for mobile)
+    if (!audioCtx || audioCtx.state === 'closed') {
       try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext || window.mozAudioContext;
+        if (!AudioContextClass) {
+          setStatus('Audio not supported on this device', false);
+          musicPlaying = false;
+          musicBtn.classList.remove('playing');
+          musicBtn.textContent = '♪';
+          return;
+        }
+        audioCtx = new AudioContextClass();
         masterGain = audioCtx.createGain();
         masterGain.gain.value = targetVolume;
         masterGain.connect(audioCtx.destination);
       } catch(e) {
         console.error('Audio context error:', e);
-        setStatus('Audio not available on this device', false);
+        setStatus('Audio initialization failed', false);
         musicPlaying = false;
         musicBtn.classList.remove('playing');
         musicBtn.textContent = '♪';
         return;
       }
     }
-    // Resume audio context if suspended (iOS requirement)
+    // Resume audio context if suspended (iOS/Android requirement)
     if (audioCtx.state === 'suspended') {
       try {
         await audioCtx.resume();
+        console.log('Audio context resumed');
       } catch(e) {
         console.error('Failed to resume audio context:', e);
+        setStatus('Failed to start audio', false);
+        musicPlaying = false;
+        musicBtn.classList.remove('playing');
+        musicBtn.textContent = '♪';
+        return;
       }
     }
     startSoundscape(activePreset);
@@ -1024,11 +1089,16 @@ canvas.addEventListener('touchmove', e => {
 function resize() {
   const wrap = canvas.parentElement;
   const w = wrap.clientWidth, h = wrap.clientHeight;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / (h || 1);
-  camera.updateProjectionMatrix();
+  if (w > 0 && h > 0) {
+    renderer.setSize(w, h, false);
+    camera.aspect = w / (h || 1);
+    camera.updateProjectionMatrix();
+  }
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => {
+  setTimeout(resize, 100); // Small delay for orientation change to fully complete
+});
 resize();
 
 /* =====================================================================
