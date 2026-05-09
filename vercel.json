@@ -2,5 +2,11 @@
   "buildCommand": "",
   "outputDirectory": ".",
   "public": true,
-  "cleanUrls": false
+  "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
